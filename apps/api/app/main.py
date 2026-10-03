@@ -16,7 +16,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.routers import health, public
+from app.routers import health, internal, public
 
 log = logging.getLogger("api")
 
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(public.router)
+    app.include_router(internal.router)
     return app
 
 
