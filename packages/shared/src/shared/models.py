@@ -205,7 +205,10 @@ class Alert(Base):
     alert_type: Mapped[str] = mapped_column(String(20))  # new | deadline_reminder | updated
     matched_vacancy_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
     matched_program_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
-    status: Mapped[str] = mapped_column(String(10), default="pending", index=True)  # pending | sent | failed | skipped
+    # pending -> sending (claimed by one sender) -> sent | failed; skipped = not sent on purpose
+    status: Mapped[str] = mapped_column(String(10), default="pending", index=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
