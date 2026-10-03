@@ -18,7 +18,7 @@ fill gaps, and anything taken from it is flagged for manual review.
 
 import json
 import re
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from dateutil import parser as dateparser
 
@@ -72,16 +72,103 @@ def extract_bps(text: str | None) -> list[int]:
 # --- classification --------------------------------------------------------
 
 FIELD_KEYWORDS: dict[str, list[str]] = {
-    "engineering": ["engineer", "sub engineer", "sdo", "dae", "technician", "electrical", "mechanical", "civil", "surveyor", "draftsman", "design"],
-    "it": ["computer", "software", "developer", "programmer", "network", "database", "it officer", "it manager", "data entry", "system administrator", "web"],
-    "education": ["teacher", "lecturer", "professor", "educator", "instructor", "sst", "est", "pst", "headmaster", "principal", "school"],
-    "health": ["doctor", "medical officer", "nurse", "nursing", "pharmacist", "dispenser", "lab ", "laboratory", "radiograph", "lhv", "midwife", "physiotherap", "dental", "mbbs",
-               "echo", "cssd", "cardiac", "cardio", "surgical", "operation theatre", "ot technician", "anesthesia", "anaesthesia", "dialysis", "x-ray", "radiolog", "dietitian", "registrar", "consultant", "medical"],
+    "engineering": [
+        "engineer",
+        "sub engineer",
+        "sdo",
+        "dae",
+        "technician",
+        "electrical",
+        "mechanical",
+        "civil",
+        "surveyor",
+        "draftsman",
+        "design",
+    ],
+    "it": [
+        "computer",
+        "software",
+        "developer",
+        "programmer",
+        "network",
+        "database",
+        "it officer",
+        "it manager",
+        "data entry",
+        "system administrator",
+        "web",
+    ],
+    "education": [
+        "teacher",
+        "lecturer",
+        "professor",
+        "educator",
+        "instructor",
+        "sst",
+        "est",
+        "pst",
+        "headmaster",
+        "principal",
+        "school",
+    ],
+    "health": [
+        "doctor",
+        "medical officer",
+        "nurse",
+        "nursing",
+        "pharmacist",
+        "dispenser",
+        "lab ",
+        "laboratory",
+        "radiograph",
+        "lhv",
+        "midwife",
+        "physiotherap",
+        "dental",
+        "mbbs",
+        "echo",
+        "cssd",
+        "cardiac",
+        "cardio",
+        "surgical",
+        "operation theatre",
+        "ot technician",
+        "anesthesia",
+        "anaesthesia",
+        "dialysis",
+        "x-ray",
+        "radiolog",
+        "dietitian",
+        "registrar",
+        "consultant",
+        "medical",
+    ],
     "finance": ["account", "audit", "finance", "cashier", "treasur", "budget"],
     "legal": ["legal", "law officer", "advocate", "prosecutor", "judicial", "judge"],
     "security": ["security", "guard", "constable", "police", "sepoy", "watchman", "chowkidar"],
-    "clerical": ["clerk", "assistant", "stenograph", "steno", "typist", "record keeper", "office secretary", "data processing", "computer operator"],
-    "admin": ["officer", "manager", "director", "administrator", "admin", "coordinator", "supervisor", "inspector", "deputy", "secretary"],
+    "clerical": [
+        "clerk",
+        "assistant",
+        "stenograph",
+        "steno",
+        "typist",
+        "record keeper",
+        "office secretary",
+        "data processing",
+        "computer operator",
+    ],
+    "admin": [
+        "officer",
+        "manager",
+        "director",
+        "administrator",
+        "admin",
+        "coordinator",
+        "supervisor",
+        "inspector",
+        "deputy",
+        "secretary",
+    ],
     "support": ["driver", "naib qasid", "qasid", "sweeper", "mali", "cook", "helper", "peon", "attendant", "khakroob", "baildar"],
 }
 # Order matters: the first match wins, so specific fields come before generic "admin".
@@ -93,7 +180,10 @@ _IT_RE = re.compile(r"\bIT\b")
 
 JOB_WORDS = re.compile(r"\b(job|jobs|career|vacanc|vacant|recruit|positions?|posts?|employment|opportunit|hiring)\w*", re.I)
 TEST_WORDS = re.compile(r"\b(GAT|NAT|TOEIC|HAT|aptitude test|assessment test|scholarship)\b", re.I)
-ADMISSION_WORDS = re.compile(r"\b(admission|admissions|ms|mphil|phd|bs|bsn|program|programme|programs|course|diploma|degree|pharm\.?\s*d|fall|spring|semester)\b", re.I)
+ADMISSION_WORDS = re.compile(
+    r"\b(admission|admissions|ms|mphil|phd|bs|bsn|program|programme|programs|course|diploma|degree|pharm\.?\s*d|fall|spring|semester)\b",
+    re.I,
+)
 
 
 _FIELD_RES = {
@@ -144,25 +234,96 @@ PROVINCE_ALIASES = {
 }
 
 CITY_PROVINCE = {
-    "Lahore": "Punjab", "Faisalabad": "Punjab", "Rawalpindi": "Punjab", "Multan": "Punjab", "Gujranwala": "Punjab",
-    "Sialkot": "Punjab", "Bahawalpur": "Punjab", "Sargodha": "Punjab", "Sheikhupura": "Punjab", "Jhang": "Punjab",
-    "Rahim Yar Khan": "Punjab", "Gujrat": "Punjab", "Sahiwal": "Punjab", "Okara": "Punjab", "Kasur": "Punjab",
-    "Mianwali": "Punjab", "Dera Ghazi Khan": "Punjab", "Chakwal": "Punjab", "Attock": "Punjab", "Jhelum": "Punjab",
-    "Kharian": "Punjab", "Wah Cantt": "Punjab", "Taxila": "Punjab", "Khanewal": "Punjab", "Vehari": "Punjab",
-    "Muzaffargarh": "Punjab", "Layyah": "Punjab", "Bhakkar": "Punjab", "Khushab": "Punjab", "Hafizabad": "Punjab",
-    "Mandi Bahauddin": "Punjab", "Narowal": "Punjab", "Pakpattan": "Punjab", "Lodhran": "Punjab", "Toba Tek Singh": "Punjab",
-    "Nankana Sahib": "Punjab", "Chiniot": "Punjab", "Bahawalnagar": "Punjab", "Rajanpur": "Punjab", "Murree": "Punjab",
-    "Karachi": "Sindh", "Hyderabad": "Sindh", "Sukkur": "Sindh", "Larkana": "Sindh", "Nawabshah": "Sindh",
-    "Mirpurkhas": "Sindh", "Tharparkar": "Sindh", "Khairpur": "Sindh", "Gambat": "Sindh", "Thatta": "Sindh", "Jamshoro": "Sindh",
-    "Dadu": "Sindh", "Badin": "Sindh", "Sanghar": "Sindh", "Shikarpur": "Sindh", "Jacobabad": "Sindh", "Ghotki": "Sindh",
-    "Umerkot": "Sindh", "Tando Allahyar": "Sindh", "Tando Muhammad Khan": "Sindh", "Matiari": "Sindh", "Kashmore": "Sindh",
-    "Peshawar": "Khyber Pakhtunkhwa", "Mardan": "Khyber Pakhtunkhwa", "Abbottabad": "Khyber Pakhtunkhwa",
-    "Swat": "Khyber Pakhtunkhwa", "Kohat": "Khyber Pakhtunkhwa", "Bannu": "Khyber Pakhtunkhwa", "Chakdara": "Khyber Pakhtunkhwa",
-    "Dir": "Khyber Pakhtunkhwa", "Malakand": "Khyber Pakhtunkhwa", "Dera Ismail Khan": "Khyber Pakhtunkhwa", "Mansehra": "Khyber Pakhtunkhwa",
-    "Charsadda": "Khyber Pakhtunkhwa", "Nowshera": "Khyber Pakhtunkhwa", "Swabi": "Khyber Pakhtunkhwa", "Haripur": "Khyber Pakhtunkhwa",
-    "Karak": "Khyber Pakhtunkhwa", "Chitral": "Khyber Pakhtunkhwa", "Mingora": "Khyber Pakhtunkhwa", "Lakki Marwat": "Khyber Pakhtunkhwa",
-    "Quetta": "Balochistan", "Gwadar": "Balochistan", "Turbat": "Balochistan", "Khuzdar": "Balochistan",
-    "Islamabad": "Islamabad", "Gilgit": "Gilgit-Baltistan", "Skardu": "Gilgit-Baltistan", "Muzaffarabad": "Azad Kashmir", "Mirpur": "Azad Kashmir",
+    "Lahore": "Punjab",
+    "Faisalabad": "Punjab",
+    "Rawalpindi": "Punjab",
+    "Multan": "Punjab",
+    "Gujranwala": "Punjab",
+    "Sialkot": "Punjab",
+    "Bahawalpur": "Punjab",
+    "Sargodha": "Punjab",
+    "Sheikhupura": "Punjab",
+    "Jhang": "Punjab",
+    "Rahim Yar Khan": "Punjab",
+    "Gujrat": "Punjab",
+    "Sahiwal": "Punjab",
+    "Okara": "Punjab",
+    "Kasur": "Punjab",
+    "Mianwali": "Punjab",
+    "Dera Ghazi Khan": "Punjab",
+    "Chakwal": "Punjab",
+    "Attock": "Punjab",
+    "Jhelum": "Punjab",
+    "Kharian": "Punjab",
+    "Wah Cantt": "Punjab",
+    "Taxila": "Punjab",
+    "Khanewal": "Punjab",
+    "Vehari": "Punjab",
+    "Muzaffargarh": "Punjab",
+    "Layyah": "Punjab",
+    "Bhakkar": "Punjab",
+    "Khushab": "Punjab",
+    "Hafizabad": "Punjab",
+    "Mandi Bahauddin": "Punjab",
+    "Narowal": "Punjab",
+    "Pakpattan": "Punjab",
+    "Lodhran": "Punjab",
+    "Toba Tek Singh": "Punjab",
+    "Nankana Sahib": "Punjab",
+    "Chiniot": "Punjab",
+    "Bahawalnagar": "Punjab",
+    "Rajanpur": "Punjab",
+    "Murree": "Punjab",
+    "Karachi": "Sindh",
+    "Hyderabad": "Sindh",
+    "Sukkur": "Sindh",
+    "Larkana": "Sindh",
+    "Nawabshah": "Sindh",
+    "Mirpurkhas": "Sindh",
+    "Tharparkar": "Sindh",
+    "Khairpur": "Sindh",
+    "Gambat": "Sindh",
+    "Thatta": "Sindh",
+    "Jamshoro": "Sindh",
+    "Dadu": "Sindh",
+    "Badin": "Sindh",
+    "Sanghar": "Sindh",
+    "Shikarpur": "Sindh",
+    "Jacobabad": "Sindh",
+    "Ghotki": "Sindh",
+    "Umerkot": "Sindh",
+    "Tando Allahyar": "Sindh",
+    "Tando Muhammad Khan": "Sindh",
+    "Matiari": "Sindh",
+    "Kashmore": "Sindh",
+    "Peshawar": "Khyber Pakhtunkhwa",
+    "Mardan": "Khyber Pakhtunkhwa",
+    "Abbottabad": "Khyber Pakhtunkhwa",
+    "Swat": "Khyber Pakhtunkhwa",
+    "Kohat": "Khyber Pakhtunkhwa",
+    "Bannu": "Khyber Pakhtunkhwa",
+    "Chakdara": "Khyber Pakhtunkhwa",
+    "Dir": "Khyber Pakhtunkhwa",
+    "Malakand": "Khyber Pakhtunkhwa",
+    "Dera Ismail Khan": "Khyber Pakhtunkhwa",
+    "Mansehra": "Khyber Pakhtunkhwa",
+    "Charsadda": "Khyber Pakhtunkhwa",
+    "Nowshera": "Khyber Pakhtunkhwa",
+    "Swabi": "Khyber Pakhtunkhwa",
+    "Haripur": "Khyber Pakhtunkhwa",
+    "Karak": "Khyber Pakhtunkhwa",
+    "Chitral": "Khyber Pakhtunkhwa",
+    "Mingora": "Khyber Pakhtunkhwa",
+    "Lakki Marwat": "Khyber Pakhtunkhwa",
+    "Quetta": "Balochistan",
+    "Gwadar": "Balochistan",
+    "Turbat": "Balochistan",
+    "Khuzdar": "Balochistan",
+    "Islamabad": "Islamabad",
+    "Gilgit": "Gilgit-Baltistan",
+    "Skardu": "Gilgit-Baltistan",
+    "Muzaffarabad": "Azad Kashmir",
+    "Mirpur": "Azad Kashmir",
 }
 
 
@@ -178,6 +339,7 @@ def extract_locations(*texts: str | None) -> tuple[list[str], list[str]]:
 
 
 # --- posts -----------------------------------------------------------------
+
 
 def _first_int(text: str | None) -> int | None:
     m = re.search(r"\d[\d,]*", text or "")
@@ -307,6 +469,7 @@ def posts_from_text(text: str) -> list[dict]:
 
 # --- listing ---------------------------------------------------------------
 
+
 def normalize_listing(
     listing: dict,
     parsed_docs: list[dict] | None = None,
@@ -423,7 +586,7 @@ def normalize_listing(
         "needs_review": bool(reasons),
         "review_reasons": reasons,
         "scraped_at": listing.get("scraped_at"),
-        "normalized_at": datetime.now(timezone.utc).isoformat(),
+        "normalized_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -487,8 +650,10 @@ def _find_row(name: str, rows: list[dict]) -> dict | None:
     return keys[best[0]] if best else None
 
 
-def _program(name: str, *, details=None, fee=None, mode=None, eligibility_text=None, age_limit=None, via_nts=True, source="portal_html") -> dict:
-    from nts.advert_info import age_range, duration, eligibility
+def _program(
+    name: str, *, details=None, fee=None, mode=None, eligibility_text=None, age_limit=None, via_nts=True, source="portal_html"
+) -> dict:
+    from nts.advert_info import age_range, duration
     from nts.tables import cell_items
 
     items = cell_items(eligibility_text) if eligibility_text else []
@@ -533,8 +698,13 @@ def build_programs(posts: list[dict], table_rows: list[dict], facts: dict, title
     extra = [r for r in table_rows if id(r) not in used]
     for row in extra:
         programs.append(
-            _program(row["name"], eligibility_text=row.get("qualification"), age_limit=row.get("age_limit"),
-                     via_nts=not posts, source="advert_table")
+            _program(
+                row["name"],
+                eligibility_text=row.get("qualification"),
+                age_limit=row.get("age_limit"),
+                via_nts=not posts,
+                source="advert_table",
+            )
         )
     if extra:
         reasons.append(f"{len(extra)} programme(s) were read from the advert table (OCR)")

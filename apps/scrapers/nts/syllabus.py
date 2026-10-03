@@ -23,11 +23,11 @@ _SKIP_SUBJECT_RE = re.compile(r"^as per (the )?advert", re.I)
 def _find_header(table: list[list[str]]) -> tuple[int, int, int, int] | None:
     """(header_row, post_col, subject_col, weight_col)."""
     for i, row in enumerate(table[:3]):
-        post = next((j for j, c in enumerate(row) if _POST_HEADER_RE.search(c or "") and not re.search(r"sr\.?\s*no", c, re.I)), None)
-        weight = next((j for j, c in enumerate(row) if _WEIGHT_HEADER_RE.search(c or "") and j != post), None)
-        subject = next(
-            (j for j, c in enumerate(row) if _SUBJECT_HEADER_RE.search(c or "") and j not in (post, weight)), None
+        post = next(
+            (j for j, c in enumerate(row) if _POST_HEADER_RE.search(c or "") and not re.search(r"sr\.?\s*no", c, re.I)), None
         )
+        weight = next((j for j, c in enumerate(row) if _WEIGHT_HEADER_RE.search(c or "") and j != post), None)
+        subject = next((j for j, c in enumerate(row) if _SUBJECT_HEADER_RE.search(c or "") and j not in (post, weight)), None)
         if post is not None and subject is not None:
             return i, post, subject, weight if weight is not None else -1
     return None
@@ -43,7 +43,10 @@ def extract_test_syllabus(tables: list[list[list[str]]]) -> dict[str, list[dict]
         h, post_col, subject_col, weight_col = header
         current = None
         for row in table[h + 1 :]:
-            cell = lambda j: (row[j] if 0 <= j < len(row) else "").strip()  # noqa: E731
+
+            def cell(j: int, row: list[str] = row) -> str:
+                return (row[j] if 0 <= j < len(row) else "").strip()
+
             if cell(post_col):
                 current = " ".join(cell(post_col).split())
                 out.setdefault(current, [])

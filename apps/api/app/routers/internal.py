@@ -3,14 +3,13 @@
 Used by the Telegram bot (Phase 5) and an admin panel; never by the public website.
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import queries
-from app.config import settings
 from app.deps import DB, INTERNAL
 from app.schemas_internal import (
     AlertFailure,
@@ -32,6 +31,7 @@ router = APIRouter(prefix="/v1/internal", tags=["internal"], dependencies=INTERN
 
 # --- helpers -----------------------------------------------------------------
 
+
 def _user(db: Session, chat_id: int) -> User:
     user = db.scalar(select(User).where(User.telegram_chat_id == chat_id))
     if user is None:
@@ -49,7 +49,9 @@ def _summaries(db: Session, listing_ids: list[int]) -> dict[int, dict]:
 def _post_names(db: Session, vacancy_ids: list[int], program_ids: list[int]) -> dict[tuple[str, int], str]:
     names = {}
     if vacancy_ids:
-        names.update({("v", i): n for i, n in db.execute(select(Vacancy.id, Vacancy.post_name).where(Vacancy.id.in_(vacancy_ids)))})
+        names.update(
+            {("v", i): n for i, n in db.execute(select(Vacancy.id, Vacancy.post_name).where(Vacancy.id.in_(vacancy_ids)))}
+        )
     if program_ids:
         names.update({("p", i): n for i, n in db.execute(select(Program.id, Program.name).where(Program.id.in_(program_ids)))})
     return names
@@ -58,22 +60,29 @@ def _post_names(db: Session, vacancy_ids: list[int], program_ids: list[int]) -> 
 def _alerts_out(db: Session, rows: list[Alert]) -> list[dict]:
     users = {u.id: u for u in db.scalars(select(User).where(User.id.in_({a.user_id for a in rows})))} if rows else {}
     summaries = _summaries(db, list({a.listing_id for a in rows}))
-    names = _post_names(
-        db, [i for a in rows for i in a.matched_vacancy_ids], [i for a in rows for i in a.matched_program_ids]
-    )
+    names = _post_names(db, [i for a in rows for i in a.matched_vacancy_ids], [i for a in rows for i in a.matched_program_ids])
     out = []
     for a in rows:
         posts = [names[("v", i)] for i in a.matched_vacancy_ids if ("v", i) in names]
         posts += [names[("p", i)] for i in a.matched_program_ids if ("p", i) in names]
-        out.append({
-            "id": a.id, "alert_type": a.alert_type, "status": a.status, "attempts": a.attempts,
-            "telegram_chat_id": users[a.user_id].telegram_chat_id, "language": users[a.user_id].language,
-            "listing": summaries[a.listing_id], "matched_posts": posts, "created_at": a.created_at,
-        })
+        out.append(
+            {
+                "id": a.id,
+                "alert_type": a.alert_type,
+                "status": a.status,
+                "attempts": a.attempts,
+                "telegram_chat_id": users[a.user_id].telegram_chat_id,
+                "language": users[a.user_id].language,
+                "listing": summaries[a.listing_id],
+                "matched_posts": posts,
+                "created_at": a.created_at,
+            }
+        )
     return out
 
 
 # --- users & preferences -------------------------------------------------------
+
 
 @router.put("/users/{chat_id}", response_model=UserOut)
 def upsert_user(chat_id: int, body: UserIn, db: Session = DB):
@@ -147,6 +156,7 @@ def user_matches(chat_id: int, limit: int = Query(20, ge=1, le=100), db: Session
 
 # --- alert outbox (for senders) --------------------------------------------------
 
+
 @router.post("/alerts/claim", response_model=list[AlertOut])
 def claim_alerts(limit: int = Query(50, ge=1, le=200), db: Session = DB):
     """Hand out pending alerts to this sender; safe with several senders at once."""
@@ -188,6 +198,7 @@ def list_alerts(
 
 # --- back office -----------------------------------------------------------------
 
+
 @router.get("/admin/overview", response_model=Overview)
 def overview(db: Session = DB):
     return {
@@ -218,7 +229,7 @@ def verify_listing(listing_id: int, db: Session = DB):
     listing = db.get(Listing, listing_id)
     if listing is None:
         raise HTTPException(404, "Listing not found")
-    listing.verified_at = datetime.now(timezone.utc)
+    listing.verified_at = datetime.now(UTC)
     db.commit()
 
 

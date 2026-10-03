@@ -4,13 +4,13 @@ from nts.advert_info import (
     advert_deadline,
     age_range,
     benefits,
+    conducted_by,
     duration,
     eligibility,
     extract_facts,
     gender,
     registration_open,
     session,
-    conducted_by,
 )
 
 VISIONARY = """VISIONARY
@@ -108,15 +108,21 @@ def test_ocr_noise_tolerance():
     from nts.tables import cell_items
 
     assert score_requirements("securing a minimum score of 50% a ; in GAT-General and 60% in GAT-Subject") == [
-        {"test": "GAT-General", "min_percent": 50}, {"test": "GAT-Subject", "min_percent": 60}]
+        {"test": "GAT-General", "min_percent": 50},
+        {"test": "GAT-Subject", "min_percent": 60},
+    ]
     assert duration("Certified Nursing Assistant (CNA) (02 vears Diploma Program)") == "2 years"
     assert eligibility("~ FSc Pre-Medical\nOpen Merit\n% (Minimum 50%)")[0]["text"] == "FSc Pre-Medical (Minimum 50%)"
     assert cell_items("¢ Matrix (either Art or Science) with 40% marks. e Age Limit: 14-40 years") == [
-        "Matrix (either Art or Science) with 40% marks", "Age Limit: 14-40 years"]
+        "Matrix (either Art or Science) with 40% marks",
+        "Age Limit: 14-40 years",
+    ]
 
 
 def test_score_requirement_with_neighbour_column_junk():
     from nts.advert_info import score_requirements
 
     assert score_requirements("securing a minimum score of 50% Se 3 in GAT-General and 60% in GAT-Subject")[0] == {
-        "test": "GAT-General", "min_percent": 50}
+        "test": "GAT-General",
+        "min_percent": 50,
+    }

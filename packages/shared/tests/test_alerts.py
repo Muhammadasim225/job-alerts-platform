@@ -1,6 +1,6 @@
 """Alert outbox: exactly-once hand-out to concurrent senders, retries, stale claims."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -43,7 +43,7 @@ def test_gives_up_after_max_attempts(session):
 def test_stale_claims_are_handed_out_again(session):
     _seed(session, 1)
     a = alerts.claim_pending(session)[0]
-    a.claimed_at = datetime.now(timezone.utc) - timedelta(minutes=30)  # the sender crashed
+    a.claimed_at = datetime.now(UTC) - timedelta(minutes=30)  # the sender crashed
     session.flush()
     again = alerts.claim_pending(session)
     assert [x.id for x in again] == [a.id] and again[0].attempts == 2

@@ -11,8 +11,8 @@ install it and set TESSERACT_CMD if it is not on PATH.
 """
 
 import json
-import re
 import logging
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -283,8 +283,8 @@ _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 def parse_docx(path: Path) -> ParsedDocument:
     """Word files are zipped XML: read paragraphs and tables directly, no OCR needed."""
-    import zipfile
     import xml.etree.ElementTree as ET
+    import zipfile
 
     root = ET.fromstring(zipfile.ZipFile(path).read("word/document.xml"))
     body = root.find(f"{_W}body")

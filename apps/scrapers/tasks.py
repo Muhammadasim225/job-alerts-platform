@@ -7,10 +7,10 @@ The same functions run with or without Celery:
 """
 
 import json
-import re
 import logging
+import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from celery.exceptions import SoftTimeLimitExceeded
 
@@ -20,10 +20,10 @@ from nts import dedup
 from nts.downloader import download_listing_attachments, listing_files_changed
 from nts.normalizer import normalize_listing, save_normalized
 from nts.parser import parse_file, save_parsed
+from nts.run_spider import crawl_nts
 from nts.store import queue_alerts, queue_reminders, store_record
 from nts.syllabus import extract_test_syllabus
 from nts.tables import extract_post_table, rows_from_tables
-from nts.run_spider import crawl_nts
 
 log = logging.getLogger(__name__)
 
@@ -116,7 +116,11 @@ def process_listing(listing: dict) -> dict:
         dedup.mark_processed(listing)
     log.info(
         "Processed %s: kind=%s vacancies=%d last_date=%s review=%s",
-        listing["listing_id"], record["kind"], len(record["vacancies"]), record["last_date"], record["needs_review"],
+        listing["listing_id"],
+        record["kind"],
+        len(record["vacancies"]),
+        record["last_date"],
+        record["needs_review"],
     )
     return {
         "listing_id": listing["listing_id"],
@@ -138,7 +142,7 @@ def run_nts_pipeline(dispatch=None, force: bool = False, include_closed_details:
     force:    re-process listings even if their fingerprint is unchanged.
     """
     started = time.monotonic()
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     run_id = started_at.strftime("%Y%m%dT%H%M%SZ")
     feed = config.RUNS_DIR / f"{run_id}_listings.jsonl"
 
@@ -205,7 +209,7 @@ def run_nts_pipeline(dispatch=None, force: bool = False, include_closed_details:
 
 def _write_run_log(summary: dict, started: float) -> None:
     summary["duration_s"] = round(time.monotonic() - started, 1)
-    summary["finished_at"] = datetime.now(timezone.utc).isoformat()
+    summary["finished_at"] = datetime.now(UTC).isoformat()
     config.RUNS_DIR.mkdir(parents=True, exist_ok=True)
     (config.RUNS_DIR / f"{summary['run_id']}.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf8")
     try:
@@ -214,12 +218,19 @@ def _write_run_log(summary: dict, started: float) -> None:
         log.warning("Could not store last run summary in Redis", exc_info=True)
     log.info(
         "NTS run %s: %d listings (%d open), %d processed, %d dispatched, %d unchanged, %d errors in %ss",
-        summary["run_id"], summary["listings_total"], summary["open"], len(summary["processed"]),
-        len(summary["dispatched"]), summary["unchanged"], len(summary["errors"]), summary["duration_s"],
+        summary["run_id"],
+        summary["listings_total"],
+        summary["open"],
+        len(summary["processed"]),
+        len(summary["dispatched"]),
+        summary["unchanged"],
+        len(summary["errors"]),
+        summary["duration_s"],
     )
 
 
 # --- Celery tasks ------------------------------------------------------------
+
 
 @app.task(
     name="tasks.scrape_nts",

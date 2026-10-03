@@ -1,12 +1,12 @@
 """Manual entry point for the NTS pipeline (no Celery needed).
 
-    uv run python main.py scrape                 # spider only; prints listings found
-    uv run python main.py run [--force]          # full chain: scrape -> download -> parse -> normalize
-    uv run python main.py process <listing_id>   # re-run the chain for one listing from the latest scrape
-    uv run python main.py parse <file>...        # test the PDF/OCR parser on local files
-    uv run python main.py show [<listing_id>] [--kind job]   # readable view for checking against the NTS site
-    uv run python main.py forget <listing_id>    # clear dedup state so the listing is processed again
-    uv run python main.py last-run               # summary of the most recent run
+uv run python main.py scrape                 # spider only; prints listings found
+uv run python main.py run [--force]          # full chain: scrape -> download -> parse -> normalize
+uv run python main.py process <listing_id>   # re-run the chain for one listing from the latest scrape
+uv run python main.py parse <file>...        # test the PDF/OCR parser on local files
+uv run python main.py show [<listing_id>] [--kind job]   # readable view for checking against the NTS site
+uv run python main.py forget <listing_id>    # clear dedup state so the listing is processed again
+uv run python main.py last-run               # summary of the most recent run
 """
 
 import argparse
@@ -37,10 +37,14 @@ def cmd_scrape(args) -> None:
     items, stats = crawl_nts(config.RUNS_DIR / "manual_listings.jsonl", include_closed_details=not args.open_only)
     for it in items:
         d = it.get("detail") or {}
-        print(f"[{it['status']:6}] {it['listing_id']:45} {it['deadline_raw']:30} posts={len(d.get('posts', [])):2} "
-              f"files={len(d.get('attachments', []))}  {it['title'][:70]}")
-    print(f"\n{len(items)} listings; responses: "
-          f"{ {k.split('/')[-1]: v for k, v in stats.items() if k.startswith('downloader/response_status_count')} }")
+        print(
+            f"[{it['status']:6}] {it['listing_id']:45} {it['deadline_raw']:30} posts={len(d.get('posts', [])):2} "
+            f"files={len(d.get('attachments', []))}  {it['title'][:70]}"
+        )
+    print(
+        f"\n{len(items)} listings; responses: "
+        f"{ {k.split('/')[-1]: v for k, v in stats.items() if k.startswith('downloader/response_status_count')} }"
+    )
 
 
 def cmd_run(args) -> None:
@@ -126,7 +130,9 @@ def _print_record(r: dict) -> None:
             if v["bps"]:
                 bits.append("BPS-" + "/".join(map(str, v["bps"])))
             if v.get("total_posts"):
-                bits.append(f"{v['total_posts']} seat(s)" + (" shared with next/previous post" if v.get("total_posts_shared") else ""))
+                bits.append(
+                    f"{v['total_posts']} seat(s)" + (" shared with next/previous post" if v.get("total_posts_shared") else "")
+                )
             if v["fee_pkr"]:
                 bits.append(f"fee Rs {v['fee_pkr']}")
             if v["age_min"] and v["age_max"]:
@@ -139,7 +145,10 @@ def _print_record(r: dict) -> None:
             if v.get("experience"):
                 print(f"         Experience:    {v['experience']}")
             if v.get("test_syllabus"):
-                parts = [s["subject"] + (f" {s['weight_percent']}%" if s.get("weight_percent") is not None else "") for s in v["test_syllabus"]]
+                parts = [
+                    s["subject"] + (f" {s['weight_percent']}%" if s.get("weight_percent") is not None else "")
+                    for s in v["test_syllabus"]
+                ]
                 print(f"         Test:          {', '.join(parts)}")
     else:
         print("  Posts:         none extracted")

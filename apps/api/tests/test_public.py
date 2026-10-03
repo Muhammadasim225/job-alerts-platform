@@ -53,7 +53,10 @@ def test_vacancy_search(client):
     r = client.get("/v1/vacancies", params={"field": "it"}).json()
     assert r["total"] == 1 and r["items"][0]["post_name"] == "Computer Operator"
     assert r["items"][0]["listing"]["external_id"] == "portal-101334"
-    assert client.get("/v1/vacancies", params={"bps_min": 16, "bps_max": 20}).json()["items"][0]["post_name"] == "Deputy Director (Design)"
+    assert (
+        client.get("/v1/vacancies", params={"bps_min": 16, "bps_max": 20}).json()["items"][0]["post_name"]
+        == "Deputy Director (Design)"
+    )
 
 
 def test_stats_and_filters(client):

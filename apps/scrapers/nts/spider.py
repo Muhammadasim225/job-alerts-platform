@@ -19,7 +19,7 @@ Every fetched page is also saved as a raw snapshot, keyed by content hash.
 
 import hashlib
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import quote, urljoin
 
 import scrapy
@@ -76,7 +76,7 @@ def parse_listing_page(response: Response) -> list[dict]:
 def _span_value(spans: list[str], prefix: str) -> str | None:
     for text in spans:
         if text.lower().startswith(prefix.lower()):
-            return clean_text(text[len(prefix):].lstrip(": "))
+            return clean_text(text[len(prefix) :].lstrip(": "))
     return None
 
 
@@ -215,7 +215,7 @@ class NtsSpider(scrapy.Spider):
         # Closed listings' detail pages are fetched too (their full data is kept for the
         # archive / SEO pages); dedup makes that a one-time cost per listing.
         self.include_closed_details = str(include_closed_details).lower() in ("1", "true", "yes")
-        self.scraped_at = datetime.now(timezone.utc).isoformat()
+        self.scraped_at = datetime.now(UTC).isoformat()
 
     async def start(self):
         yield scrapy.Request(config.NTS_LISTING_URL, callback=self.parse)

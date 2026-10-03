@@ -90,8 +90,14 @@ def _listing(**detail):
             "test_date_raw": "2026-10-12",
             "attachments": [],
             "posts": [
-                {"name": "Computer Operator (BPS-12)", "mode": "Online", "fee": "750 + 10 Service charges",
-                 "age_limit": "18 - 25 Years", "details": None, "raw": "x"},
+                {
+                    "name": "Computer Operator (BPS-12)",
+                    "mode": "Online",
+                    "fee": "750 + 10 Service charges",
+                    "age_limit": "18 - 25 Years",
+                    "details": None,
+                    "raw": "x",
+                },
             ],
             **detail,
         },
@@ -179,14 +185,37 @@ def test_experience_years(text, years):
 
 def test_portal_posts_enriched_from_advert_table():
     table = [
-        {"name": "Deputy Director (Design)", "total_posts": 1,
-         "qualification": "(i) BSc (Civil Engineering) from a University recognized by HEC, and (ii) having five years relevant experience"},
-        {"name": "Computer Operator", "total_posts": 2, "qualification": "Intermediate + MS Office / ICS and With 40 wpm speed on computer."},
+        {
+            "name": "Deputy Director (Design)",
+            "total_posts": 1,
+            "qualification": "(i) BSc (Civil Engineering) from a University recognized by HEC, and (ii) having five years relevant experience",
+        },
+        {
+            "name": "Computer Operator",
+            "total_posts": 2,
+            "qualification": "Intermediate + MS Office / ICS and With 40 wpm speed on computer.",
+        },
     ]
-    listing = _listing(posts=[
-        {"name": "Deputy Director (Design) BPS-18", "mode": "Online", "fee": "750", "age_limit": "26 - 40 Years", "details": None, "raw": "a"},
-        {"name": "Computer Operator (BPS-12)", "mode": "Online", "fee": "750", "age_limit": "18 - 25 Years", "details": None, "raw": "b"},
-    ])
+    listing = _listing(
+        posts=[
+            {
+                "name": "Deputy Director (Design) BPS-18",
+                "mode": "Online",
+                "fee": "750",
+                "age_limit": "26 - 40 Years",
+                "details": None,
+                "raw": "a",
+            },
+            {
+                "name": "Computer Operator (BPS-12)",
+                "mode": "Online",
+                "fee": "750",
+                "age_limit": "18 - 25 Years",
+                "details": None,
+                "raw": "b",
+            },
+        ]
+    )
     rec = normalize_listing(listing, table_posts=table)
     dd, co = rec["vacancies"]
     assert (dd["bps"], dd["total_posts"], dd["experience_years_min"]) == ([18], 1, 5)
@@ -199,13 +228,22 @@ def test_uom_programs_with_subjects_from_portal_details():
     from nts.normalizer import build_programs
 
     posts = [
-        {"name": "GAT-C (MS/ MPhil Program)", "fee": "1300 + 10 Service charges",
-         "details": "MS/ MPhil Programs (1. Pharmacy 2. Mathematics 3. Biotechnology 4. Geology 5. Computer Science)"},
+        {
+            "name": "GAT-C (MS/ MPhil Program)",
+            "fee": "1300 + 10 Service charges",
+            "details": "MS/ MPhil Programs (1. Pharmacy 2. Mathematics 3. Biotechnology 4. Geology 5. Computer Science)",
+        },
         {"name": "Mathematics (PhD Program)", "fee": "1300 + 10 Service charges", "details": None},
     ]
     programs, _ = build_programs(posts, [], {}, "University of Malakand MS, MPhil & PhD Admission Test (Fall 2026-I)")
     mphil, phd = programs
-    assert mphil["level"] == "MPhil" and mphil["subjects"] == ["Pharmacy", "Mathematics", "Biotechnology", "Geology", "Computer Science"]
+    assert mphil["level"] == "MPhil" and mphil["subjects"] == [
+        "Pharmacy",
+        "Mathematics",
+        "Biotechnology",
+        "Geology",
+        "Computer Science",
+    ]
     assert phd["level"] == "PhD" and phd["subjects"] == ["Mathematics"] and phd["fee_pkr"] == 1300
 
 
@@ -214,8 +252,14 @@ def test_cihs_portal_programs_merged_with_advert_table():
 
     posts = [{"name": "Generic BSN", "fee": "2500 + 10 Service charges", "age_limit": "14 - 35 Years", "details": None}]
     table = [
-        {"name": "Generic BSN (04 years Degree Program) Morning & Evening", "qualification": "« (Pre-Medical) with 50% marks. « Age Limit: 14-35 years."},
-        {"name": "Community Midwife (CMW) 18 months Diploma Program", "qualification": "¢ Matrix (either Art or Science) with 40% marks. ¢ Age Limit: 14-40 years"},
+        {
+            "name": "Generic BSN (04 years Degree Program) Morning & Evening",
+            "qualification": "« (Pre-Medical) with 50% marks. « Age Limit: 14-35 years.",
+        },
+        {
+            "name": "Community Midwife (CMW) 18 months Diploma Program",
+            "qualification": "¢ Matrix (either Art or Science) with 40% marks. ¢ Age Limit: 14-40 years",
+        },
     ]
     programs, reasons = build_programs(posts, table, {}, "City Institute of Health Sciences")
     bsn, cmw = programs
@@ -228,7 +272,12 @@ def test_cihs_portal_programs_merged_with_advert_table():
 def test_banner_only_admission_uses_banner_facts():
     from nts.normalizer import build_programs
 
-    facts = {"eligibility": [{"text": "FSc Pre-Medical (Minimum 50%)", "min_percent": 50}], "age_min": 14, "age_max": 35, "duration": "4 years"}
+    facts = {
+        "eligibility": [{"text": "FSc Pre-Medical (Minimum 50%)", "min_percent": 50}],
+        "age_min": 14,
+        "age_max": 35,
+        "duration": "4 years",
+    }
     [p], reasons = build_programs([], [], facts, "Visionary Institute, Sukkur (BSN (Generic) 4 Year Degree Program 2026-27)")
     assert p["name"] == "BSN (Generic) 4 Year Degree Program 2026-27"
     assert p["level"] == "BSN" and p["duration"] == "4 years" and p["eligibility"] == ["FSc Pre-Medical (Minimum 50%)"]

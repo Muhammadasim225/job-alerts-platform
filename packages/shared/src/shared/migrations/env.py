@@ -1,7 +1,6 @@
 """Alembic environment: the target DB comes from DATABASE_URL (see shared.db)."""
 
 from alembic import context
-from sqlalchemy import pool
 
 from shared.db import database_url, get_engine
 from shared.models import Base
