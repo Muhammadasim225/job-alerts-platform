@@ -12,7 +12,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     PYTHONUNBUFFERED=1 \
-    DATA_DIR=/app/data \
+    DATA_DIR=/app/data     OMP_THREAD_LIMIT=1 \
     PATH="/app/apps/scrapers/.venv/bin:$PATH"
 
 # Same relative layout as the repo, so the "../../packages/shared" path source resolves
@@ -26,4 +26,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY apps/scrapers/ ./
 
 # Default: Celery worker. Beat and migrations run from the same image with other commands.
-CMD ["celery", "-A", "celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+# OMP_THREAD_LIMIT=1: one Tesseract = one core; parallelism comes from Celery processes
+# (several OCR jobs at once), not from threads fighting over the same cores.
+CMD ["celery", "-A", "celery_app", "worker", "-Q", "scrape,process,default", "--loglevel=INFO", "--concurrency=4"]

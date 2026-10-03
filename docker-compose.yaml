@@ -51,6 +51,10 @@ services:
       dockerfile: apps/scrapers/Dockerfile
     image: sarkarialert-scrapers:latest
     restart: always
+    # scrape (1 at a time via lock) + process (parallel OCR) + default (reminders, housekeeping)
+    command: >
+      sh -c "celery -A celery_app worker -Q scrape,process,default
+      --concurrency=$${WORKER_CONCURRENCY:-4} --hostname=worker@%h --loglevel=INFO"
     env_file:
       - .env
     volumes:
@@ -60,6 +64,12 @@ services:
         condition: service_started
       migrate:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_app inspect ping -d worker@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
 
   scraper-beat:
     # Same image as scraper-worker (built once by that service)
@@ -72,6 +82,7 @@ services:
       - ./apps/scrapers/data:/app/data
     depends_on:
       - redis
+      - scraper-worker
 
 
 volumes:

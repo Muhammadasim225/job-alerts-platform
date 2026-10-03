@@ -36,7 +36,13 @@ OCR_LANGS = os.getenv("OCR_LANGS", "eng")
 # A PDF page with fewer extracted characters than this is treated as scanned and OCR'd
 MIN_TEXT_CHARS_PER_PAGE = int(os.getenv("MIN_TEXT_CHARS_PER_PAGE", "80"))
 
-SCRAPE_INTERVAL_HOURS = int(os.getenv("NTS_SCRAPE_INTERVAL_HOURS", "3"))
+# Daily schedule (Asia/Karachi). One full run a day: scrape -> process -> store -> queue alerts.
+SCRAPE_HOUR = int(os.getenv("NTS_SCRAPE_HOUR", "6"))
+SCRAPE_MINUTE = int(os.getenv("NTS_SCRAPE_MINUTE", "0"))
+REMINDER_HOUR = int(os.getenv("REMINDER_HOUR", "9"))  # after the scrape has finished
+REMINDER_DAYS_BEFORE = int(os.getenv("REMINDER_DAYS_BEFORE", "2"))
+HOUSEKEEPING_HOUR = int(os.getenv("HOUSEKEEPING_HOUR", "3"))
+RETENTION_DAYS = int(os.getenv("RUN_LOG_RETENTION_DAYS", "30"))
 
 # Optional vision-language OCR (deAPI, Nanonets-OCR-s) for stylized image adverts and
 # scanned pages. Off unless an API key is set; Tesseract is used otherwise / on failure.
