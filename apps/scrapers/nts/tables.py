@@ -202,14 +202,13 @@ def _table_on_page(img) -> list[dict]:
         ):
             header = w
             break
+
     # Header words also occur in running text ("... on Diploma Programs", "Applications
     # are invited for the following positions"); the real header shares its line with
     # other column headers such as BPS / Age / Qualification / Eligibility.
     def header_score(w):
         return sum(
-            1
-            for o in words
-            if o is not w and abs(o["y"] - w["y"]) < 25 and any(p.match(o["t"]) for p in COLUMN_HEADERS.values())
+            1 for o in words if o is not w and abs(o["y"] - w["y"]) < 25 and any(p.match(o["t"]) for p in COLUMN_HEADERS.values())
         )
 
     for pattern in (PROGRAM_HEADER_RE, NAME_HEADER_RE):
@@ -228,7 +227,7 @@ def _table_on_page(img) -> list[dict]:
         return []
     # Column boundaries from the vertical rules of the first body row. Tables without
     # an outer border (only a divider between columns) use the image edges instead.
-    first = next(((a, b) for a, b in zip(rows, rows[1:]) if b - a >= 40), None)
+    first = next(((a, b) for a, b in zip(rows, rows[1:], strict=False) if b - a >= 40), None)
     if first is None:
         return []
     cols = grid.vrules(first[0] + 5, first[1] - 5)
@@ -238,7 +237,7 @@ def _table_on_page(img) -> list[dict]:
 
     def column_of(word):
         cx = word["x"] + word["w"] / 2
-        return next(((a, b) for a, b in zip(cols, cols[1:]) if a < cx < b), None)
+        return next(((a, b) for a, b in zip(cols, cols[1:], strict=False) if a < cx < b), None)
 
     name_col = column_of(header)
     if name_col is None:
@@ -262,20 +261,20 @@ def _table_on_page(img) -> list[dict]:
 
     def cell_value(key: str, y_mid: float) -> tuple[str, bool]:
         rules = col_rules[key]
-        for a, b in zip(rules, rules[1:]):
+        for a, b in zip(rules, rules[1:], strict=False):
             if a < y_mid < b:
                 box = (other_cols[key][0] + 4, a + 4, other_cols[key][1] - 4, b - 4)
                 if box not in cell_cache:
                     cfg = "--psm 6 -c tessedit_char_whitelist=0123456789" if key == "positions" else "--psm 6"
                     cell_cache[box] = _ocr(img, box, cfg)
-                spans_rows = sum(1 for r0, r1 in zip(rows, rows[1:]) if a <= r0 and r1 <= b + 2) > 1
+                spans_rows = sum(1 for r0, r1 in zip(rows, rows[1:], strict=False) if a <= r0 and r1 <= b + 2) > 1
                 return cell_cache[box], spans_rows
         return "", False
 
     # Row bands; a band whose name cell holds several separate text blocks is really
     # several rows with a too-faint rule between them, so it is split on the gaps.
     bands: list[tuple[int, int, bool]] = []
-    for top, bottom in zip(rows, rows[1:]):
+    for top, bottom in zip(rows, rows[1:], strict=False):
         if bottom - top < 40:  # the table ended (double rule / next section)
             break
         # Past the table's bottom edge the column divider stops; text or a footer box
@@ -290,17 +289,15 @@ def _table_on_page(img) -> list[dict]:
         # columns have the least ink, so no cell's text is sliced in half.
         others = [c for c in other_cols.values()]
 
-        def ink_at(y: int) -> int:
-            return sum(
-                sum(grid.px[x, y] < 128 for x in range(a + 8, b - 8, 3)) for a, b in others
-            )
+        def ink_at(y: int, others: list = others) -> int:
+            return sum(sum(grid.px[x, y] < 128 for x in range(a + 8, b - 8, 3)) for a, b in others)
 
         cuts = [top]
-        for a, b in zip(blocks, blocks[1:]):
+        for a, b in zip(blocks, blocks[1:], strict=False):
             gap = range(a[1] + 2, b[0] - 1)
             cuts.append(min(gap, key=ink_at) if len(gap) else (a[1] + b[0]) // 2)
         cuts.append(bottom)
-        bands.extend((a, b, True) for a, b in zip(cuts, cuts[1:]))
+        bands.extend((a, b, True) for a, b in zip(cuts, cuts[1:], strict=False))
 
     def value(key: str, top: int, bottom: int, split: bool) -> tuple[str, bool]:
         if not split:
@@ -346,6 +343,7 @@ def _table_on_page(img) -> list[dict]:
 
 
 # --- tables already in text form (VLM output, Word files) -----------------------------
+
 
 def tables_from_markup(text: str) -> list[list[list[str]]]:
     """HTML <table> and Markdown pipe tables in OCR/VLM output -> [[cells]] per table.
@@ -458,7 +456,10 @@ def rows_from_tables(tables: list[list[list[str]]]) -> list[dict]:
         if "experience" in cols and cols.get("experience") == cols.get("qualification"):
             cols.pop("experience")
         for row in table[header_i + 1 :]:
-            get = lambda k: (row[cols[k]] if k in cols and cols[k] < len(row) else "").strip()  # noqa: E731
+
+            def get(k: str, row: list[str] = row, cols: dict = cols) -> str:
+                return (row[cols[k]] if k in cols and cols[k] < len(row) else "").strip()
+
             name = clean_post_name(get("name"))
             if len(name) < 3 or _CONTACT_RE.search(name) or re.fullmatch(r"(total|grand total)\W*", name, re.I):
                 continue

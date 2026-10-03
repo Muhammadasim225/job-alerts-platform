@@ -28,9 +28,12 @@ def _url() -> str | None:
     if os.getenv("TEST_DATABASE_URL"):
         return normalize_url(os.environ["TEST_DATABASE_URL"])
     env = ROOT / ".env"
-    url = os.getenv("DATABASE_URL") or next(
-        (l.split("=", 1)[1].strip() for l in env.read_text().splitlines() if l.startswith("DATABASE_URL=")), None
-    ) if env.exists() else os.getenv("DATABASE_URL")
+    url = (
+        os.getenv("DATABASE_URL")
+        or next((l.split("=", 1)[1].strip() for l in env.read_text().splitlines() if l.startswith("DATABASE_URL=")), None)
+        if env.exists()
+        else os.getenv("DATABASE_URL")
+    )
     if not url:
         return None
     url = re.sub(r"@[^:/]+(:\d+)?/", r"@localhost\1/", normalize_url(url))

@@ -43,6 +43,7 @@ class FakeSession:
 @pytest.fixture
 def configured(monkeypatch, tmp_path):
     import fakeredis
+
     from nts import dedup
 
     # Never touch the real local Redis: its pause flag / budget would leak into tests
@@ -89,9 +90,13 @@ def test_rowspan_and_markdown_tables():
     <tr><td>Engineer-I</td><td>28 Years</td></tr></table>"""
     rows = rows_from_tables(tables_from_markup(html))
     assert [(r["name"], r["total_posts"], r["age_limit"]) for r in rows] == [
-        ("Engineer-II", 60, "30 Years"), ("Engineer-I", 60, "28 Years")]
+        ("Engineer-II", 60, "30 Years"),
+        ("Engineer-I", 60, "28 Years"),
+    ]
     md = "| Programs | Eligibility Criteria |\n|---|---|\n| Generic BSN (04 years) | FSc Pre-Medical 50% |\n"
-    assert rows_from_tables(tables_from_markup(md)) == [{"name": "Generic BSN (04 years)", "qualification": "FSc Pre-Medical 50%"}]
+    assert rows_from_tables(tables_from_markup(md)) == [
+        {"name": "Generic BSN (04 years)", "qualification": "FSc Pre-Medical 50%"}
+    ]
 
 
 def test_table_split_across_strips_is_merged():
@@ -146,6 +151,7 @@ def test_image_descriptions_dropped():
     text = markup_to_text(raw)
     assert "uniform" not in text and "Age Limit: 14-35 Years" in text
     from nts.advert_info import registration_open
+
     assert registration_open(text)
 
 
@@ -168,6 +174,7 @@ class HeaderResp(Resp):
 
 def test_daily_quota_pauses_vlm_without_waiting(configured, monkeypatch):
     import fakeredis
+
     from nts import dedup
 
     r = fakeredis.FakeRedis(decode_responses=True)
@@ -175,8 +182,16 @@ def test_daily_quota_pauses_vlm_without_waiting(configured, monkeypatch):
     slept = []
     monkeypatch.setattr(vlm.time, "sleep", lambda s: slept.append(s))
     reset = vlm.time.time() + 3600
-    daily = HeaderResp({}, 429, {"X-RateLimit-Type": "daily", "X-RateLimit-Daily-Remaining": "0",
-                                 "X-RateLimit-Daily-Reset": str(reset), "X-RateLimit-Daily-Limit": "50"})
+    daily = HeaderResp(
+        {},
+        429,
+        {
+            "X-RateLimit-Type": "daily",
+            "X-RateLimit-Daily-Remaining": "0",
+            "X-RateLimit-Daily-Reset": str(reset),
+            "X-RateLimit-Daily-Limit": "50",
+        },
+    )
     with pytest.raises(vlm.QuotaExhausted):
         vlm._rate_limited(lambda: daily)
     assert slept == []  # no waiting on a daily limit

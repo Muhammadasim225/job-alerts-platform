@@ -114,16 +114,12 @@ def match_listing(listing: Listing, pref: Preference, today: date | None = None)
 
 
 def _active_users(session: Session):
-    return session.scalars(
-        select(User).where(User.is_active.is_(True)).options(selectinload(User.preference))
-    ).all()
+    return session.scalars(select(User).where(User.is_active.is_(True)).options(selectinload(User.preference))).all()
 
 
 def _load_listing(session: Session, listing_id: int) -> Listing:
     return session.scalars(
-        select(Listing)
-        .where(Listing.id == listing_id)
-        .options(selectinload(Listing.vacancies), selectinload(Listing.programs))
+        select(Listing).where(Listing.id == listing_id).options(selectinload(Listing.vacancies), selectinload(Listing.programs))
     ).one()
 
 

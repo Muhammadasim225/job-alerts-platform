@@ -10,7 +10,7 @@ gets the same message twice. Alerts left in "sending" by a crashed sender are ha
 out again after STALE_AFTER.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -22,7 +22,7 @@ STALE_AFTER = timedelta(minutes=10)
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def claim_pending(session: Session, limit: int = 50) -> list[Alert]:

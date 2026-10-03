@@ -42,9 +42,19 @@ def _filters(
     if bps_min is not None and bps_max is not None and bps_min > bps_max:
         raise HTTPException(422, "bps_min must not be greater than bps_max")
     return queries.ListingFilters(
-        kind=kind, status=None if status == "any" else status, source=source, province=province, city=city,
-        field=field, bps_min=bps_min, bps_max=bps_max, program_level=program_level, q=q,
-        closing_after=closing_after, closing_before=closing_before, include_expired=include_expired,
+        kind=kind,
+        status=None if status == "any" else status,
+        source=source,
+        province=province,
+        city=city,
+        field=field,
+        bps_min=bps_min,
+        bps_max=bps_max,
+        program_level=program_level,
+        q=q,
+        closing_after=closing_after,
+        closing_before=closing_before,
+        include_expired=include_expired,
     )
 
 

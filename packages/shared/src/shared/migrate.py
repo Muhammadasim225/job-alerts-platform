@@ -1,7 +1,7 @@
 """Run database migrations without an alembic.ini.
 
-    python -m shared.migrate                 # upgrade to the latest schema
-    python -m shared.migrate revision "msg"  # autogenerate a new migration (dev)
+python -m shared.migrate                 # upgrade to the latest schema
+python -m shared.migrate revision "msg"  # autogenerate a new migration (dev)
 """
 
 import sys

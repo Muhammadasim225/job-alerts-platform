@@ -46,9 +46,7 @@ def session(text: str) -> str | None:
 
 # --- people ----------------------------------------------------------------------
 
-_AGE_RE = re.compile(
-    r"\bage(?:\s*limit)?\b[^0-9\n]{0,25}(\d{2})\s*(?:-|–|to)\s*(\d{2})\s*(?:years?|yrs?)?", re.I
-)
+_AGE_RE = re.compile(r"\bage(?:\s*limit)?\b[^0-9\n]{0,25}(\d{2})\s*(?:-|–|to)\s*(\d{2})\s*(?:years?|yrs?)?", re.I)
 _AGE_MAX_RE = re.compile(r"\b(?:upper\s+)?age(?:\s*limit)?\b[^0-9\n]{0,20}(?:up\s*to|max(?:imum)?)\s*(\d{2})", re.I)
 
 
@@ -87,7 +85,9 @@ _PERCENT_RE = re.compile(r"(\d{2})\s*%")
 _BULLET_RE = re.compile(r"^[\s•·*+~=>\-–—°®©¢e«»]{0,3}\s*(?=[A-Z(])")
 
 
-_GOOD_TOKEN_RE = re.compile(r"^[(\[]?(?:[A-Za-z][A-Za-z.'&/-]{0,13}|\d{1,3}(?:[-–]\d{1,3})?(?:%|st|nd|rd|th)?|[&/+%-])[)\],.:;%]*$")
+_GOOD_TOKEN_RE = re.compile(
+    r"^[(\[]?(?:[A-Za-z][A-Za-z.'&/-]{0,13}|\d{1,3}(?:[-–]\d{1,3})?(?:%|st|nd|rd|th)?|[&/+%-])[)\],.:;%]*$"
+)
 
 
 def text_quality(line: str) -> float:
@@ -101,8 +101,10 @@ def text_quality(line: str) -> float:
         core = tok.strip("()[],.:;%")
         if not _GOOD_TOKEN_RE.match(tok):
             continue
-        if core.isalpha() and len(core) >= 4 and (
-            not re.search(r"[aeiouyAEIOUY]", core) or re.search(r"[^aeiouyAEIOUY]{5,}", core) or re.search(r"(.)\1\1", core)
+        if (
+            core.isalpha()
+            and len(core) >= 4
+            and (not re.search(r"[aeiouyAEIOUY]", core) or re.search(r"[^aeiouyAEIOUY]{5,}", core) or re.search(r"(.)\1\1", core))
         ):
             continue
         if re.search(r"[a-z][A-Z]{2,}|[A-Z]{3,}[a-z]", core):  # "WHISIEOLEYy"
@@ -208,7 +210,9 @@ def conducted_by(text: str) -> str | None:
     return None
 
 
-_SCORE_RE = re.compile(r"(\d{2})\s*%(?:\s*\S{1,3}){0,2}?\s*(?:marks\s*)?in\s*(GAT[- ]?(?:General|Subject|A|B|C)|HAT|NAT|USAT|entry test)", re.I)
+_SCORE_RE = re.compile(
+    r"(\d{2})\s*%(?:\s*\S{1,3}){0,2}?\s*(?:marks\s*)?in\s*(GAT[- ]?(?:General|Subject|A|B|C)|HAT|NAT|USAT|entry test)", re.I
+)
 
 
 def score_requirements(text: str) -> list[dict]:
@@ -243,6 +247,7 @@ def benefits(text: str) -> list[str]:
 
 
 # --- all together ------------------------------------------------------------------
+
 
 def extract_facts(text: str) -> dict:
     age_min, age_max = age_range(text)

@@ -13,14 +13,29 @@ def test_migrations_create_all_tables(session):
 
 
 def _listing(**kw):
-    return Listing(source="nts", external_id=kw.pop("external_id", "portal-1"), url="https://x", status="open",
-                   kind="job", title="Some Authority", **kw)
+    return Listing(
+        source="nts",
+        external_id=kw.pop("external_id", "portal-1"),
+        url="https://x",
+        status="open",
+        kind="job",
+        title="Some Authority",
+        **kw,
+    )
 
 
 def test_listing_with_vacancies_round_trip(session):
     listing = _listing(last_date=date(2026, 10, 8), provinces=["Punjab"], advert_facts={"session": "2026-27"})
-    listing.vacancies.append(Vacancy(position=1, post_name="Computer Operator", bps=[12], bps_min=12, bps_max=12,
-                                     test_syllabus=[{"subject": "IT", "weight_percent": 20}]))
+    listing.vacancies.append(
+        Vacancy(
+            position=1,
+            post_name="Computer Operator",
+            bps=[12],
+            bps_min=12,
+            bps_max=12,
+            test_syllabus=[{"subject": "IT", "weight_percent": 20}],
+        )
+    )
     session.add(listing)
     session.flush()
     got = session.get(Listing, listing.id)

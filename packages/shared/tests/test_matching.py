@@ -40,7 +40,9 @@ def test_it_graduate_in_punjab_gets_computer_operator_only(session):
 
 def test_bps_range_filters_posts(session):
     wcla = store(session, "record_job_wcla")
-    assert names(wcla, match_listing(wcla, Preference(kinds=["job"], bps_min=16, bps_max=20), TODAY)) == ["Deputy Director (Design)"]
+    assert names(wcla, match_listing(wcla, Preference(kinds=["job"], bps_min=16, bps_max=20), TODAY)) == [
+        "Deputy Director (Design)"
+    ]
     assert match_listing(wcla, Preference(kinds=["job"], bps_min=1, bps_max=10), TODAY) is None
 
 

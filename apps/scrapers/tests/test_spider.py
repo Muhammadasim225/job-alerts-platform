@@ -105,4 +105,9 @@ def test_parse_posts_with_total_post_field():
     from nts.spider import parse_posts
 
     [p] = parse_posts("Post Name: Doctor of Pharmacy (Pharm. D) (Online) Apply Now Total Post: 1 Fee: 5300 + 10 Service charges")
-    assert (p["name"], p["mode"], p["total_posts"], p["fee"]) == ("Doctor of Pharmacy (Pharm. D)", "Online", 1, "5300 + 10 Service charges")
+    assert (p["name"], p["mode"], p["total_posts"], p["fee"]) == (
+        "Doctor of Pharmacy (Pharm. D)",
+        "Online",
+        1,
+        "5300 + 10 Service charges",
+    )

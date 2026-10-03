@@ -1,0 +1,25 @@
+# Lint config for every Python package in the monorepo (CI runs `ruff check .`)
+line-length = 130
+target-version = "py312"
+extend-exclude = ["**/migrations/versions", "**/.venv", "apps/scrapers/data"]
+
+[lint]
+select = [
+  "E", "W",  # pycodestyle
+  "F",       # pyflakes: unused imports/variables, undefined names
+  "I",       # import order
+  "B",       # bugbear: likely bugs (loop closures, mutable defaults, ...)
+  "UP",      # modern syntax for Python 3.12
+]
+ignore = [
+  "E741",   # short names like `l` in comprehensions are fine here
+  "B008",   # FastAPI's Depends()/Query() in defaults is the framework's idiom
+  "UP046",  # Generic[T] base kept for Pydantic compatibility
+  "E501",   # line length is the formatter's job (`ruff format`); it keeps long literals whole
+]
+
+[lint.isort]
+known-first-party = ["shared", "app", "nts", "config", "tasks", "celery_app", "beat_schedule"]
+
+[format]
+quote-style = "double"

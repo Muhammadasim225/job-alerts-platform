@@ -15,7 +15,11 @@ def listing(**overrides):
         "status": "open",
         "title": "Some Authority",
         "deadline_raw": "8th October 2026",
-        "detail": {"last_date_raw": "2026-10-08", "attachments": [{"url": "https://x/a.pdf"}], "posts": [{"raw": "Clerk BPS-11"}]},
+        "detail": {
+            "last_date_raw": "2026-10-08",
+            "attachments": [{"url": "https://x/a.pdf"}],
+            "posts": [{"raw": "Clerk BPS-11"}],
+        },
     }
     return {**base, **overrides}
 

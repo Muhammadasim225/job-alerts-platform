@@ -12,7 +12,7 @@ Keys:
 """
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis
 
@@ -63,7 +63,7 @@ def was_seen_before(listing_id: str, r: redis.Redis | None = None) -> bool:
 def mark_processed(listing: dict, r: redis.Redis | None = None) -> None:
     r = r or get_redis()
     key = LISTING_KEY.format(listing["listing_id"])
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     pipe = r.pipeline()
     pipe.hsetnx(key, "first_seen", now)
     pipe.hset(key, mapping={"fingerprint": listing_fingerprint(listing), "last_changed": now, "status": listing["status"]})

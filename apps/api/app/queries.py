@@ -116,10 +116,23 @@ def _post_aggregates(session: Session, listing_ids: list[int]) -> dict[int, dict
 
 
 def summarize(listing: Listing, agg: dict, today: date) -> dict:
-    data = {c: getattr(listing, c) for c in (
-        "id", "source", "external_id", "url", "status", "kind", "title", "organization",
-        "last_date", "provinces", "cities", "first_seen_at",
-    )}
+    data = {
+        c: getattr(listing, c)
+        for c in (
+            "id",
+            "source",
+            "external_id",
+            "url",
+            "status",
+            "kind",
+            "title",
+            "organization",
+            "last_date",
+            "provinces",
+            "cities",
+            "first_seen_at",
+        )
+    }
     data["is_expired"] = bool(listing.last_date and listing.last_date < today)
     data["days_left"] = (listing.last_date - today).days if listing.last_date and not data["is_expired"] else None
     data["registration_open"] = (listing.advert_facts or {}).get("registration_open")
@@ -188,12 +201,16 @@ def facets(session: Session, today: date) -> dict:
         "cities": rows(select(city, func.count()).where(live).group_by(city).order_by(func.count().desc())),
         "fields": rows(
             select(Vacancy.field, func.count(distinct(Listing.id)))
-            .join(Listing, Listing.id == Vacancy.listing_id).where(live).group_by(Vacancy.field)
+            .join(Listing, Listing.id == Vacancy.listing_id)
+            .where(live)
+            .group_by(Vacancy.field)
             .order_by(func.count(distinct(Listing.id)).desc())
         ),
         "program_levels": rows(
             select(Program.level, func.count(distinct(Listing.id)))
-            .join(Listing, Listing.id == Program.listing_id).where(live).group_by(Program.level)
+            .join(Listing, Listing.id == Program.listing_id)
+            .where(live)
+            .group_by(Program.level)
             .order_by(func.count(distinct(Listing.id)).desc())
         ),
     }

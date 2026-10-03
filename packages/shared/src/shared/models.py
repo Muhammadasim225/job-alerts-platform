@@ -166,9 +166,7 @@ class User(TimestampMixin, Base):
     language: Mapped[str] = mapped_column(String(5), default="en")  # en | ur
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)  # False after /stop
 
-    preference: Mapped["Preference | None"] = relationship(
-        back_populates="user", uselist=False, cascade="all, delete-orphan"
-    )
+    preference: Mapped["Preference | None"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class Preference(TimestampMixin, Base):
