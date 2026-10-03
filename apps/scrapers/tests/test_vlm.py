@@ -153,3 +153,35 @@ def test_merge_keeps_vlm_and_adds_missed_badges():
     assert out.startswith("How to Apply\nAge 16 to 25 years")
     assert "NASTP Kharian" in out and "Merit Based" in out and "Scholarship" in out
     assert out.count("Age 16 to 25 years") == 1 and "BSsc" not in out
+
+
+class HeaderResp(Resp):
+    def __init__(self, body, status, headers):
+        super().__init__(body, status)
+        self.headers = headers
+
+
+def test_daily_quota_pauses_vlm_without_waiting(configured, monkeypatch):
+    import fakeredis
+    from nts import dedup
+
+    r = fakeredis.FakeRedis(decode_responses=True)
+    monkeypatch.setattr(dedup, "get_redis", lambda: r)
+    slept = []
+    monkeypatch.setattr(vlm.time, "sleep", lambda s: slept.append(s))
+    reset = vlm.time.time() + 3600
+    daily = HeaderResp({}, 429, {"X-RateLimit-Type": "daily", "X-RateLimit-Daily-Remaining": "0",
+                                 "X-RateLimit-Daily-Reset": str(reset), "X-RateLimit-Daily-Limit": "50"})
+    with pytest.raises(vlm.QuotaExhausted):
+        vlm._rate_limited(lambda: daily)
+    assert slept == []  # no waiting on a daily limit
+    assert vlm.paused_until() == pytest.approx(reset)
+    # Paused: new images are refused at once, before any HTTP call
+    with pytest.raises(vlm.QuotaExhausted):
+        vlm._ocr_one(Image.new("RGB", (50, 50), "red"), session=None)
+
+
+def test_poll_schedule_backs_off():
+    d = vlm._poll_delays()
+    first = [next(d) for _ in range(6)]
+    assert first[0] == 8 and first[1] < first[2] < first[3] and max(first) <= 30

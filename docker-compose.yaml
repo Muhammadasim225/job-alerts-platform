@@ -19,6 +19,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   redis:
     image: redis:7-alpine
     restart: always
@@ -29,8 +34,21 @@ services:
     volumes:
       - redis_data:/data
 
+  # One-off: bring the Postgres schema up to date (packages/shared migrations)
+  migrate:
+    image: sarkarialert-scrapers:latest
+    command: python -m shared.migrate
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   scraper-worker:
-    build: ./apps/scrapers
+    build:
+      context: .
+      dockerfile: apps/scrapers/Dockerfile
     image: sarkarialert-scrapers:latest
     restart: always
     env_file:
@@ -38,7 +56,10 @@ services:
     volumes:
       - ./apps/scrapers/data:/app/data
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   scraper-beat:
     # Same image as scraper-worker (built once by that service)

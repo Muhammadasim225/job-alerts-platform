@@ -171,6 +171,105 @@ def cmd_show(args) -> None:
     print(f"{len(records)} record(s)")
 
 
+def cmd_db_backfill(args) -> None:
+    """Load every normalized JSON record into Postgres (after migrations)."""
+    from nts.store import backfill, db_enabled
+
+    if not db_enabled():
+        sys.exit("DATABASE_URL is not set")
+    files = sorted(config.NORMALIZED_DIR.glob("*.json"))
+    stored, failed = backfill(files)
+    print(f"Stored {stored} record(s) in Postgres, {failed} failed")
+
+
+def _csv(value: str | None) -> list[str]:
+    return [v.strip() for v in value.split(",") if v.strip()] if value else []
+
+
+def cmd_user_add(args) -> None:
+    """Dev helper until the Telegram bot exists: create/update a subscriber."""
+    from sqlalchemy import select
+
+    from shared.db import session_scope
+    from shared.models import Preference, User
+
+    with session_scope(config.DATABASE_URL) as s:
+        user = s.scalar(select(User).where(User.telegram_chat_id == args.chat_id))
+        if user is None:
+            user = User(telegram_chat_id=args.chat_id, name=args.name)
+            s.add(user)
+        user.preference = Preference(
+            kinds=_csv(args.kinds) or ["job"],
+            fields=_csv(args.fields),
+            provinces=_csv(args.provinces),
+            keywords=_csv(args.keywords),
+            program_levels=_csv(args.levels),
+            bps_min=args.bps_min,
+            bps_max=args.bps_max,
+            age=args.age,
+            max_experience_years=args.max_experience,
+        )
+        s.flush()
+        print(f"User {user.id} (chat {user.telegram_chat_id}) saved")
+
+
+def cmd_match(args) -> None:
+    """Show which live listings match a user, without queueing anything."""
+    from sqlalchemy import select
+
+    from shared.db import session_scope
+    from shared.matching import matches_for_user
+    from shared.models import Listing, Program, User, Vacancy
+
+    with session_scope(config.DATABASE_URL) as s:
+        user = s.scalar(select(User).where(User.telegram_chat_id == args.chat_id))
+        if user is None:
+            sys.exit("No such user; add one with user-add")
+        for m in matches_for_user(s, user):
+            listing = s.get(Listing, m.listing_id)
+            print(f"{listing.external_id:45} [{listing.kind}] last date {listing.last_date}  {listing.title[:60]}")
+            for vid in m.vacancy_ids:
+                print(f"    - {s.get(Vacancy, vid).post_name}")
+            for pid in m.program_ids:
+                print(f"    - {s.get(Program, pid).name}")
+
+
+def cmd_queue_alerts(args) -> None:
+    """Queue alerts for listings already in the DB (normally done as they arrive)."""
+    from sqlalchemy import select
+
+    from shared.db import session_scope
+    from shared.matching import queue_alerts_for_listing
+    from shared.models import Listing
+
+    with session_scope(config.DATABASE_URL) as s:
+        q = select(Listing.id).where(Listing.status == "open")
+        if args.listing_id:
+            q = q.where(Listing.external_id == args.listing_id)
+        total = sum(queue_alerts_for_listing(s, lid) for lid in s.scalars(q).all())
+    print(f"Queued {total} new alert(s)")
+
+
+def cmd_alerts(args) -> None:
+    from sqlalchemy import select
+
+    from shared.db import session_scope
+    from shared.models import Alert, Listing, User
+
+    with session_scope(config.DATABASE_URL) as s:
+        rows = s.execute(
+            select(Alert, User.telegram_chat_id, Listing.external_id, Listing.title)
+            .join(User, User.id == Alert.user_id)
+            .join(Listing, Listing.id == Alert.listing_id)
+            .order_by(Alert.created_at.desc())
+            .limit(args.limit)
+        ).all()
+        for alert, chat_id, ext_id, title in rows:
+            n = len(alert.matched_vacancy_ids) + len(alert.matched_program_ids)
+            print(f"[{alert.status:7}] {alert.alert_type:17} chat {chat_id:<12} {ext_id:40} {n} match(es)  {title[:45]}")
+        print(f"{len(rows)} alert(s)")
+
+
 def cmd_forget(args) -> None:
     from nts import dedup
 
@@ -212,6 +311,35 @@ def main() -> None:
     s.add_argument("listing_id", nargs="?")
     s.add_argument("--kind", choices=["job", "admission", "test", "unknown"])
     s.set_defaults(func=cmd_show)
+
+    s = sub.add_parser("db-backfill", help="load data/normalized/*.json into Postgres")
+    s.set_defaults(func=cmd_db_backfill)
+
+    s = sub.add_parser("user-add", help="dev: create/update a subscriber and their preferences")
+    s.add_argument("chat_id", type=int)
+    s.add_argument("--name")
+    s.add_argument("--kinds", help="job,admission,test (default job)")
+    s.add_argument("--fields", help="e.g. it,engineering,health")
+    s.add_argument("--provinces", help="e.g. Punjab,Sindh")
+    s.add_argument("--keywords", help="e.g. computer,nurse")
+    s.add_argument("--levels", help="programme levels for admissions, e.g. BSN,MPhil,PhD")
+    s.add_argument("--bps-min", type=int)
+    s.add_argument("--bps-max", type=int)
+    s.add_argument("--age", type=int)
+    s.add_argument("--max-experience", type=int, help="years; 0 = fresh graduate")
+    s.set_defaults(func=cmd_user_add)
+
+    s = sub.add_parser("match", help="dev: live listings that match a user")
+    s.add_argument("chat_id", type=int)
+    s.set_defaults(func=cmd_match)
+
+    s = sub.add_parser("queue-alerts", help="queue alerts for open listings already in the DB")
+    s.add_argument("listing_id", nargs="?")
+    s.set_defaults(func=cmd_queue_alerts)
+
+    s = sub.add_parser("alerts", help="recent queued/sent alerts")
+    s.add_argument("--limit", type=int, default=30)
+    s.set_defaults(func=cmd_alerts)
 
     s = sub.add_parser("forget")
     s.add_argument("listing_id")

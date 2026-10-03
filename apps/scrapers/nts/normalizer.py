@@ -75,7 +75,8 @@ FIELD_KEYWORDS: dict[str, list[str]] = {
     "engineering": ["engineer", "sub engineer", "sdo", "dae", "technician", "electrical", "mechanical", "civil", "surveyor", "draftsman", "design"],
     "it": ["computer", "software", "developer", "programmer", "network", "database", "it officer", "it manager", "data entry", "system administrator", "web"],
     "education": ["teacher", "lecturer", "professor", "educator", "instructor", "sst", "est", "pst", "headmaster", "principal", "school"],
-    "health": ["doctor", "medical officer", "nurse", "nursing", "pharmacist", "dispenser", "lab ", "laboratory", "radiograph", "lhv", "midwife", "physiotherap", "dental", "mbbs"],
+    "health": ["doctor", "medical officer", "nurse", "nursing", "pharmacist", "dispenser", "lab ", "laboratory", "radiograph", "lhv", "midwife", "physiotherap", "dental", "mbbs",
+               "echo", "cssd", "cardiac", "cardio", "surgical", "operation theatre", "ot technician", "anesthesia", "anaesthesia", "dialysis", "x-ray", "radiolog", "dietitian", "registrar", "consultant", "medical"],
     "finance": ["account", "audit", "finance", "cashier", "treasur", "budget"],
     "legal": ["legal", "law officer", "advocate", "prosecutor", "judicial", "judge"],
     "security": ["security", "guard", "constable", "police", "sepoy", "watchman", "chowkidar"],
@@ -84,7 +85,11 @@ FIELD_KEYWORDS: dict[str, list[str]] = {
     "support": ["driver", "naib qasid", "qasid", "sweeper", "mali", "cook", "helper", "peon", "attendant", "khakroob", "baildar"],
 }
 # Order matters: the first match wins, so specific fields come before generic "admin".
-FIELD_PRIORITY = ["it", "engineering", "health", "education", "legal", "finance", "security", "clerical", "support", "admin"]
+# Order matters: the first match wins. Health comes before engineering so hospital
+# posts like "Echo Technician" are not filed under engineering's "technician".
+FIELD_PRIORITY = ["it", "health", "engineering", "education", "legal", "finance", "security", "clerical", "support", "admin"]
+# "IT" only in capitals ("IT Support", "Analyst-II (IT)"); lowercase "it" is an ordinary word
+_IT_RE = re.compile(r"\bIT\b")
 
 JOB_WORDS = re.compile(r"\b(job|jobs|career|vacanc|vacant|recruit|positions?|posts?|employment|opportunit|hiring)\w*", re.I)
 TEST_WORDS = re.compile(r"\b(GAT|NAT|TOEIC|HAT|aptitude test|assessment test|scholarship)\b", re.I)
@@ -99,6 +104,8 @@ _FIELD_RES = {
 
 def classify_field(post_name: str) -> str | None:
     # Keywords match at word starts only ("est" must not match "Test")
+    if _IT_RE.search(post_name):
+        return "it"
     for field in FIELD_PRIORITY:
         if _FIELD_RES[field].search(post_name):
             return field

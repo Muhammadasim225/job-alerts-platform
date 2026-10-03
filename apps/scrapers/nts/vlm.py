@@ -93,25 +93,68 @@ def _headers() -> dict:
     return {"Authorization": f"Bearer {config.DEAPI_API_KEY}", "Accept": "application/json"}
 
 
-RATE_LIMIT_RETRIES = 6
+RATE_LIMIT_RETRIES = 3
+PAUSE_KEY = "nts:vlm:paused_until"
+
+
+class QuotaExhausted(VlmError):
+    """deAPI's daily request quota is used up; VLM is paused until it resets."""
+
+
+def paused_until() -> float | None:
+    """Epoch seconds until which deAPI is known to refuse us (daily quota), else None."""
+    from nts.dedup import get_redis
+
+    try:
+        value = get_redis().get(PAUSE_KEY)
+    except Exception:
+        return None
+    if value and float(value) > time.time():
+        return float(value)
+    return None
+
+
+def _pause(until: float) -> None:
+    from nts.dedup import get_redis
+
+    try:
+        get_redis().set(PAUSE_KEY, str(until), ex=max(60, int(until - time.time())))
+    except Exception:
+        log.warning("Could not store the VLM pause in Redis", exc_info=True)
 
 
 def _rate_limited(call):
-    """Run an HTTP call, waiting out 429s as the API asks (Retry-After / reset header)."""
+    """Run an HTTP call and handle 429s by their kind (see X-RateLimit-* headers):
+
+    - daily quota spent (free tier: 50/day): pause VLM until the daily reset and fail
+      at once, so every remaining image goes straight to Tesseract instead of waiting
+      (that waiting once made a single listing take 20 minutes)
+    - per-minute limit (5/min): wait for the window to reset, a few times at most
+    """
     for attempt in range(RATE_LIMIT_RETRIES):
         resp = call()
         if resp.status_code != 429:
             return resp
         headers = getattr(resp, "headers", {}) or {}
+        if headers.get("X-RateLimit-Daily-Remaining") == "0" or headers.get("X-RateLimit-Type") == "daily":
+            try:
+                reset = float(headers.get("X-RateLimit-Daily-Reset"))
+            except (TypeError, ValueError):
+                reset = time.time() + 6 * 3600
+            _pause(reset)
+            raise QuotaExhausted(
+                f"deAPI daily quota used up (limit {headers.get('X-RateLimit-Daily-Limit')}); "
+                f"VLM paused until {time.strftime('%Y-%m-%d %H:%M', time.localtime(reset))}"
+            )
         wait = headers.get("Retry-After") or headers.get("X-RateLimit-Reset")
         try:
             wait = float(wait)
             if wait > 1e9:  # an epoch timestamp, not seconds
                 wait -= time.time()
         except (TypeError, ValueError):
-            wait = 10 * (attempt + 1)
-        wait = min(max(wait, 2), 90)
-        log.info("deAPI rate limit hit; waiting %.0fs", wait)
+            wait = 15 * (attempt + 1)
+        wait = min(max(wait, 2), 65)
+        log.info("deAPI per-minute limit hit; waiting %.0fs", wait)
         time.sleep(wait)
     return resp
 
@@ -135,8 +178,21 @@ def _submit(data: bytes, session) -> str:
     return request_id
 
 
+def _poll_delays():
+    """Seconds between status checks: a job takes ~5-20 s, and every check counts
+    against the API's request limits (5/min, 50/day on the free tier), so start
+    late and back off instead of polling every few seconds."""
+    yield 8
+    delay = 6.0
+    while True:
+        yield delay
+        delay = min(delay * 1.5, 30)
+
+
 def _wait(request_id: str, session) -> str:
     deadline = time.monotonic() + TIMEOUT_SECONDS
+    delays = _poll_delays()
+    time.sleep(next(delays) if POLL_SECONDS else 0)
     while time.monotonic() < deadline:
         resp = _rate_limited(
             lambda: session.get(f"{config.DEAPI_BASE_URL}/api/v2/jobs/{request_id}", headers=_headers(), timeout=(10, 30))
@@ -156,7 +212,7 @@ def _wait(request_id: str, session) -> str:
             if reason == "INPUT_TOO_LARGE":
                 raise InputTooLarge(f"deAPI job {request_id}: {reason}")
             raise VlmError(f"deAPI job {request_id} failed: {reason}")
-        time.sleep(POLL_SECONDS)
+        time.sleep(next(delays) if POLL_SECONDS else 0)
     raise VlmError(f"deAPI job {request_id} timed out after {TIMEOUT_SECONDS}s")
 
 
@@ -249,6 +305,9 @@ def _ocr_one(image, session) -> str:
     cached = _cache_path(digest)
     if cached.exists():
         return cached.read_text(encoding="utf8")
+    until = paused_until()
+    if until:
+        raise QuotaExhausted(f"deAPI paused until {time.strftime('%Y-%m-%d %H:%M', time.localtime(until))} (daily quota)")
     if not _take_budget():
         raise VlmError("daily VLM budget spent")
 

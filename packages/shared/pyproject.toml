@@ -1,0 +1,26 @@
+[project]
+name = "shared"
+version = "0.1.0"
+description = "SarkariAlert shared backend code: database models, persistence and matching"
+readme = "README.md"
+authors = [
+    { name = "Hi 👋, I'm Mohammad Asim", email = "muhammadasim4927@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "sqlalchemy>=2.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.21,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

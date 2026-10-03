@@ -262,3 +262,14 @@ def test_attachment_roles():
 def test_admission_title_wins_over_pbs_programme():
     title = "City Institute of Health Sciences (Admissions Test for Various Diploma Programs)"
     assert classify_kind(title, ["PBS (01 Years Program) (Cardiac Care Unit)"]) == "admission"
+
+
+def test_field_classifier_hospital_and_it_posts():
+    assert classify_field("Echo Technician") == "health"
+    assert classify_field("CSSD Technician") == "health"
+    assert classify_field("Senior Registrar (Cardiac Imaging)") == "health"
+    assert classify_field("IT Support") == "it"
+    assert classify_field("Analyst-II (IT)") == "it"
+    assert classify_field("Senior Engineer") == "engineering"
+    assert classify_field("Engineer-II (Electrical/Electronics)") == "engineering"
+    assert classify_field("Submit it to the office") is None

@@ -1,0 +1,245 @@
+{
+  "source": "nts",
+  "listing_id": "portal-101364",
+  "url": "https://portal.nts.org.pk/Alldetail/MTAxMzY0",
+  "status": "open",
+  "kind": "admission",
+  "title": "University of Malakand, Chakdara Dir Lower MS, MPhil & PhD Admission Test (Fall 2026-I)",
+  "organization": "University of Malakand, Chakdara Dir Lower MS, MPhil & PhD Admission Test (Fall 2026-I)",
+  "department": "University of Malakand, Chakdara Dir Lower",
+  "project_code": "2609401",
+  "deadline_label": "Last Date of Application Form Submission",
+  "last_date": "2026-10-05",
+  "announce_date": "2026-09-24",
+  "test_date": "2026-10-10",
+  "is_expired": false,
+  "provinces": [
+    "Khyber Pakhtunkhwa"
+  ],
+  "cities": [
+    "Chakdara",
+    "Dir",
+    "Malakand"
+  ],
+  "vacancies": [],
+  "programs": [
+    {
+      "name": "GAT-A (MS/ MPhil Program)",
+      "level": "MPhil",
+      "subjects": [
+        "Management Studies"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": "MS/ MPhil Programs (1. Management Studies)",
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "GAT-B (MS/ MPhil Program)",
+      "level": "MPhil",
+      "subjects": [
+        "Sociology",
+        "Social Work",
+        "Pashto",
+        "Journalism & Mass Communication"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": "MS/ MPhil Programs (1. Sociology 2. Social Work 3. Pashto 4. Journalism & Mass Communication)",
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "GAT-C (MS/ MPhil Program)",
+      "level": "MPhil",
+      "subjects": [
+        "Pharmacy",
+        "Mathematics",
+        "Biotechnology",
+        "Geology",
+        "Computer Science"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": "MS/ MPhil Programs (1. Pharmacy 2. Mathematics 3. Biotechnology 4. Geology 5. Computer Science)",
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Mathematics (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Mathematics"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Management Studies (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Management Studies"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Pharmacy (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Pharmacy"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Biotechnology (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Biotechnology"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Sociology (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Sociology"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Social Work (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Social Work"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    },
+    {
+      "name": "Computer Science (PhD Program)",
+      "level": "PhD",
+      "subjects": [
+        "Computer Science"
+      ],
+      "duration": null,
+      "eligibility": [],
+      "age_min": null,
+      "age_max": null,
+      "fee_pkr": 1300,
+      "mode": "Online",
+      "details": null,
+      "via_nts": true,
+      "extracted_from": "portal_html"
+    }
+  ],
+  "test_syllabus": {},
+  "advert_facts": {
+    "registration_open": false,
+    "session": "Fall 2026",
+    "advert_last_date": "2026-10-05",
+    "age_min": null,
+    "age_max": null,
+    "gender": null,
+    "eligibility": [
+      {
+        "text": "ADMISSIONS FOR GRADUATE PROGRAMS FOR FALL 2026",
+        "min_percent": null
+      },
+      {
+        "text": "BS Ees",
+        "min_percent": null
+      }
+    ],
+    "duration": null,
+    "test_by": "NTS (GAT)",
+    "test_requirements": [
+      {
+        "test": "GAT-General",
+        "min_percent": 50
+      },
+      {
+        "test": "GAT-Subject",
+        "min_percent": 60
+      }
+    ],
+    "benefits": []
+  },
+  "attachments": [
+    {
+      "name": "ADVERTISEMENT",
+      "url": "https://portal.nts.org.pk/uploads/projects/1790319104_UOM%20Updated%20advertisement%2025,9,2026.jpeg",
+      "path": "raw/attachments/portal-101364/efbb1143_1790319104_UOM_Updated_advertisement_25_9_2026.jpeg",
+      "content_type": "image/jpeg",
+      "sha256": "a31349901e0d823e393b7c2aa0db31901368e5d9e139b6d7f0da974d85f0c4ae",
+      "size": 471026,
+      "reused": true,
+      "role": "advert"
+    }
+  ],
+  "raw_html_path": "raw/html/portal-101364/95856c66a997db84.html",
+  "needs_review": false,
+  "review_reasons": [],
+  "scraped_at": "2026-10-03T10:02:22.704483+00:00",
+  "normalized_at": "2026-10-03T10:47:11.047393+00:00",
+  "parsed_text_path": "parsed/portal-101364.json",
+  "is_new": false
+}
