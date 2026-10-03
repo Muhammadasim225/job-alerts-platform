@@ -15,6 +15,7 @@ dependencies = [
     "requests>=2.34.2",
     "scrapy>=2.19.0",
     "sentry-sdk>=2.70.0",
+    "shared",
 ]
 
 [dependency-groups]
@@ -26,3 +27,6 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+shared = { path = "../../packages/shared", editable = true }

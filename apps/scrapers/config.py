@@ -6,6 +6,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+# Postgres (shared schema in packages/shared). When unset, records are only written as JSON.
+DATABASE_URL = os.getenv("DATABASE_URL")
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
 
 # Everything the pipeline writes (raw snapshots, attachments, parsed text, records, run logs)

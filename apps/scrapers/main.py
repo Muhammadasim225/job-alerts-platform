@@ -171,6 +171,17 @@ def cmd_show(args) -> None:
     print(f"{len(records)} record(s)")
 
 
+def cmd_db_backfill(args) -> None:
+    """Load every normalized JSON record into Postgres (after migrations)."""
+    from nts.store import backfill, db_enabled
+
+    if not db_enabled():
+        sys.exit("DATABASE_URL is not set")
+    files = sorted(config.NORMALIZED_DIR.glob("*.json"))
+    stored, failed = backfill(files)
+    print(f"Stored {stored} record(s) in Postgres, {failed} failed")
+
+
 def cmd_forget(args) -> None:
     from nts import dedup
 
@@ -212,6 +223,9 @@ def main() -> None:
     s.add_argument("listing_id", nargs="?")
     s.add_argument("--kind", choices=["job", "admission", "test", "unknown"])
     s.set_defaults(func=cmd_show)
+
+    s = sub.add_parser("db-backfill", help="load data/normalized/*.json into Postgres")
+    s.set_defaults(func=cmd_db_backfill)
 
     s = sub.add_parser("forget")
     s.add_argument("listing_id")

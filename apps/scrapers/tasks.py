@@ -20,6 +20,7 @@ from nts import dedup
 from nts.downloader import download_listing_attachments, listing_files_changed
 from nts.normalizer import normalize_listing, save_normalized
 from nts.parser import parse_file, save_parsed
+from nts.store import store_record
 from nts.syllabus import extract_test_syllabus
 from nts.tables import extract_post_table, rows_from_tables
 from nts.run_spider import crawl_nts
@@ -103,6 +104,8 @@ def process_listing(listing: dict) -> dict:
     record["needs_review"] = bool(record["review_reasons"])
     record["is_new"] = not dedup.was_seen_before(listing["listing_id"])
     out = save_normalized(record)
+    # Raises on a DB error: the listing then stays unmarked and is retried next run
+    stored = store_record(record)
 
     if download_errors:
         # Leave it unmarked so the next run retries the missing file (a Word file
@@ -121,6 +124,7 @@ def process_listing(listing: dict) -> dict:
         "is_new": record["is_new"],
         "needs_review": record["needs_review"],
         "output": out,
+        "db": stored,
     }
 
 

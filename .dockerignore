@@ -1,0 +1,11 @@
+# Applies to images built with the repo root as context (scrapers)
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/node_modules
+**/.next
+.git
+.env
+apps/scrapers/data
+*.log

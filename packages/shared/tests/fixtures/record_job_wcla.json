@@ -1,0 +1,268 @@
+{
+  "source": "nts",
+  "listing_id": "portal-101334",
+  "url": "https://portal.nts.org.pk/Alldetail/MTAxMzM0",
+  "status": "closed",
+  "kind": "job",
+  "title": "Punjab Walled Cities and Heritage Areas Authority",
+  "organization": "Punjab Walled Cities and Heritage Areas Authority",
+  "department": "Walled City Of Lahore Authority",
+  "project_code": "2609202",
+  "deadline_label": "Last Date of Application Form Submission",
+  "last_date": "2026-09-28",
+  "announce_date": "2026-09-11",
+  "test_date": "2026-10-12",
+  "is_expired": true,
+  "provinces": [
+    "Punjab"
+  ],
+  "cities": [
+    "Lahore"
+  ],
+  "vacancies": [
+    {
+      "post_name": "Deputy Director (Design)",
+      "post_name_raw": "Deputy Director (Design) BPS-18",
+      "bps": [
+        18
+      ],
+      "bps_min": 18,
+      "bps_max": 18,
+      "field": "engineering",
+      "fee_pkr": 750,
+      "age_min": 26,
+      "age_max": 40,
+      "mode": "Online",
+      "qualification": "(i) BSc (Civil Engineering) from a University recognized by Higher Education Commission, and (ii) having five years relevant experience",
+      "experience": null,
+      "experience_years_min": 5,
+      "total_posts": 1,
+      "total_posts_shared": false,
+      "details": null,
+      "extracted_from": "portal_html",
+      "test_syllabus": [
+        {
+          "subject": "Verbal Reasoning",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Analytical Reasoning",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Quantitative",
+          "weight_percent": 10
+        },
+        {
+          "subject": "General Knowledge",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Civil Engineering",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Engineering Drawing",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Environmental Engineering",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Descriptive (Essay Writing)",
+          "weight_percent": 30
+        }
+      ]
+    },
+    {
+      "post_name": "Computer Operator",
+      "post_name_raw": "Computer Operator (BPS-12)",
+      "bps": [
+        12
+      ],
+      "bps_min": 12,
+      "bps_max": 12,
+      "field": "it",
+      "fee_pkr": 750,
+      "age_min": 18,
+      "age_max": 25,
+      "mode": "Online",
+      "qualification": "Intermediate + MS Office / ICS and With 40 wom speed on computer.",
+      "experience": null,
+      "experience_years_min": null,
+      "total_posts": 2,
+      "total_posts_shared": false,
+      "details": null,
+      "extracted_from": "portal_html",
+      "test_syllabus": [
+        {
+          "subject": "Verbal Reasoning",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Analytical Reasoning",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Quantitative",
+          "weight_percent": 10
+        },
+        {
+          "subject": "General Knowledge",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Fundamentals of IT",
+          "weight_percent": 20
+        },
+        {
+          "subject": "Basic Computer Knowledge (MS-Word, Excel, PowerPoint)",
+          "weight_percent": 20
+        },
+        {
+          "subject": "Windows Operating System",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Record Keeping",
+          "weight_percent": 10
+        },
+        {
+          "subject": "Skill Test",
+          "weight_percent": null
+        },
+        {
+          "subject": "English Typing Speed (40 w.p.m.)",
+          "weight_percent": null
+        }
+      ]
+    }
+  ],
+  "programs": [],
+  "test_syllabus": {
+    "Deputy Director (Design)": [
+      {
+        "subject": "Verbal Reasoning",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Analytical Reasoning",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Quantitative",
+        "weight_percent": 10
+      },
+      {
+        "subject": "General Knowledge",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Civil Engineering",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Engineering Drawing",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Environmental Engineering",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Descriptive (Essay Writing)",
+        "weight_percent": 30
+      }
+    ],
+    "Computer Operator": [
+      {
+        "subject": "Verbal Reasoning",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Analytical Reasoning",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Quantitative",
+        "weight_percent": 10
+      },
+      {
+        "subject": "General Knowledge",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Fundamentals of IT",
+        "weight_percent": 20
+      },
+      {
+        "subject": "Basic Computer Knowledge (MS-Word, Excel, PowerPoint)",
+        "weight_percent": 20
+      },
+      {
+        "subject": "Windows Operating System",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Record Keeping",
+        "weight_percent": 10
+      },
+      {
+        "subject": "Skill Test",
+        "weight_percent": null
+      },
+      {
+        "subject": "English Typing Speed (40 w.p.m.)",
+        "weight_percent": null
+      }
+    ]
+  },
+  "advert_facts": {
+    "registration_open": true,
+    "session": null,
+    "advert_last_date": "2026-09-28",
+    "age_min": null,
+    "age_max": null,
+    "gender": null,
+    "eligibility": [
+      {
+        "text": "1 | Deputy Director (Design) | 18 | 1 | (i) BSc (Civil Engineering) from a University recognized by Higher Education Commission, and",
+        "min_percent": null
+      }
+    ],
+    "duration": null,
+    "test_by": null,
+    "test_requirements": [],
+    "benefits": []
+  },
+  "attachments": [
+    {
+      "name": "Advertisement",
+      "url": "https://portal.nts.org.pk/uploads/projects/1789111784_WCLA%20ad.jpg",
+      "path": "raw/attachments/portal-101334/9e9d030b_1789111784_WCLA_ad.jpg",
+      "content_type": "image/jpeg",
+      "sha256": "2bff22ad828e699619720424336b7436a6fdebe63d51d67eead0dc364cca73b1",
+      "size": 776496,
+      "reused": true,
+      "role": "advert"
+    },
+    {
+      "name": "Content Weightages",
+      "url": "https://portal.nts.org.pk/uploads/projects/1790853930_ContentWeightages.docx",
+      "path": "raw/attachments/portal-101334/cbb069aa_1790853930_ContentWeightages.docx",
+      "content_type": "application/octet-stream",
+      "sha256": "9bca42eeed3d7457a25cd4bf3483f462dab7d6a98eb87a620c4e3193572bed5e",
+      "size": 18622,
+      "reused": true,
+      "role": "syllabus"
+    }
+  ],
+  "raw_html_path": "raw/html/portal-101334/55f763ee7ecc9edd.html",
+  "needs_review": false,
+  "review_reasons": [],
+  "scraped_at": "2026-10-03T10:02:22.704483+00:00",
+  "normalized_at": "2026-10-03T10:45:45.570848+00:00",
+  "parsed_text_path": "parsed/portal-101334.json",
+  "is_new": false
+}
