@@ -5,3 +5,6 @@ __pycache__/
 node_modules/
 .next/
 uv.lock.bak
+apps/scrapers/data/
+*.log
+.pytest_cache/

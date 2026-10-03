@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>NTS Candidate Portal</title>
+      <meta name="robots" content="noindex, nofollow" />
+      <!-- Bootstrap -->
+      <link href="../assets/main/bootstrap.min.css" rel="stylesheet">
+      <link href="../assets/main/custome.css" rel="stylesheet">
+      <style>
+         .btn-sm{
+         background: #f44336;
+         color: #ffffff;
+         border: 0;
+         box-shadow: 3px 3px 15px rgb(0 0 0 / 20%);
+         /* latin */
+         }
+         .postbox {
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    margin-bottom: 30px;
+    border-radius: 4px;
+    box-shadow: 3px 28px 15px rgb(0 0 0 / 8%);
+    transition: all 0.5s;
+    -webkit-transition: all 0.5s;
+}
+
+
+
+.top-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+ 
+  color: #FFF;
+  height: 50px;
+  padding: 1em;
+}
+
+.menu {
+  display: flex;
+  flex-direction: row;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu > li {
+  margin: 0 1rem;
+}
+
+.menu-button-container {
+  display: none;
+  height: 100%;
+  width: 30px;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#menu-toggle {
+  display: none;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+  display: block;
+  background-color: #fff;
+  position: absolute;
+  height: 4px;
+  width: 30px;
+  transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  border-radius: 2px;
+}
+
+.menu-button::before {
+  content: '';
+  margin-top: -8px;
+}
+
+.menu-button::after {
+  content: '';
+  margin-top: 8px;
+}
+
+#menu-toggle:checked + .menu-button-container .menu-button::before {
+  margin-top: 0px;
+  transform: rotate(405deg);
+}
+
+#menu-toggle:checked + .menu-button-container .menu-button {
+  background: rgba(255, 255, 255, 0);
+}
+
+#menu-toggle:checked + .menu-button-container .menu-button::after {
+  margin-top: 0px;
+  transform: rotate(-405deg);
+}
+
+@media (max-width: 700px) {
+  .menu-button-container {
+    display: flex;
+  }
+  .top-nav{
+   
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #00BAF0;
+  background: linear-gradient(to left, #f46b45, #eea849);
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  color: #FFF;
+  height: 50px;
+  padding: 1em;
+
+  }
+  .menu {
+    position: absolute;
+    top: 0;
+    margin-top: 50px;
+    left: 0;
+    flex-direction: column;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+  #menu-toggle ~ .menu li {
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  #menu-toggle:checked ~ .menu li {
+    border: 1px solid #333;
+    height: 2.5em;
+    padding: 0.5em;
+    transition: height 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .menu > li {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 0.5em 0;
+    width: 100%;
+    color: white;
+    background-color: #222;
+  }
+  .menu > li:not(:last-child) {
+    border-bottom: 1px solid #444;
+  }
+}
+.news{
+   color:#fff;
+}
+p,li{
+   text-align:justify;
+   color: #333;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 24px;
+}
+li.text-color {
+    color: #333;
+}
+      </style>
+   </head>
+   <body>
+      <div class="loader">
+         <div>
+            <img src="../app-assets/images/loading.gif" />
+         </div>
+      </div>
+      <div class="container-fluid">
+         <div class="row">
+             
+            <div class="col-sm-5 left-wrapper">
+               <div class="event-banner-wrapper">
+               <h3 style="color:#fff;">Important Updates</h3>
+               <marquee behavior="up" direction="up" scrollamount="4" onmouseover="this.stop();" onmouseout="this.start();" style="width: 81%;background: #f78410de;padding-right: 24px; height:80%;">
+                        <ol>
+                           <li class="news">DO NOT give your ported mobile number (which is converted from one network to another) so that SMS delivery is ensure. Please make sure you have not blocked the Business/ unwanted SMS through PTA Instruction by Reg to 3627, if so please unblock by sending sms "Unreg" to 3627 in order to receive SMS alerts from NTS. And if you have any sms blocker installed on your cell phone or your SIM is inactive / offline, NTS will not be responsible for the non-delivery of the SMS..</li>
+                           <li class="news">SMS on ported numbers are restricted therefore please register ported cell # by sending sms "MNP" to 8331 (will be charged Rs.2+Tax one time).to ensure delivery of all future sms to ported cell No. by NTS.</li>
+                           <li class="news">NTS adds to its Corporate Social Responsibility where Disable Candidates are entitled for Fee Exemption subject to the provision of NADRA Disability Certificate while submitting every Application Form, Except International Tests (All Products).</li>
+                           <li class="news">Queries for the Project will be Entertained Till Seven (7) Days Prior to Project's First Test Day Note: Any corrections/changes resulting from queries, if found valid, shall only be updated on the NTS website. You are requested to please keep visiting www.nts.org.pk for status updates, if any.
+                              By Hand submission of Application Form is not allowed
+                              Office Timings:
+                              08:30 AM to 04:30 PM (Monday to Friday)
+                              Lunch & Prayer Break: 01:00 PM to 02:00 PM
+                           </li>
+                        </ol>
+                     </marquee>
+               </div>
+            </div>
+            <div class="col-sm-7 right-wrapper">
+               <div class="event-ticket-wrapper">
+                   
+
+               
+                  <div class="event-tab">
+                  <section class="top-nav">
+                    <div>
+                    
+                    </div>
+                    <input id="menu-toggle" type="checkbox" />
+                    <label class='menu-button-container' for="menu-toggle">
+                    <div class='menu-button'></div>
+                </label>
+                     <!-- Nav tabs -->
+                     <ul class="nav nav-tabs menu" role="tablist">
+                        <li role="presentation">
+                           <a href="/">All Application</a>
+                        </li>
+                        <li role="presentation">
+                           <a href="/login">
+                           Login</a>
+                        </li>
+                        <li role="presentation">
+                           <a href="/register">Registration</a>
+                        </li>
+                        <li role="presentation">
+                           <a href="#termCondition" aria-controls="termCondition" role="tab" data-toggle="tab">Terms & Conditions</a>
+                        </li>
+                        <li role="presentation">
+                           <a href="#privacyPolicy" aria-controls="privacyPolicy" role="tab" data-toggle="tab">Privacy Policy</a>
+                        </li>
+                     </ul>
+                     </section>
+                     <!-- Tab panes -->
+                     <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane fade in active" id="allProject">
+                           <div class="row">
+                            
+                           <div class="col-12">
+                        <div class="card">
+
+                            <div class="card-content">
+                                <div class="card-body">
+                                    <!-- Top Header -->
+                                   
+                                    <div id="projectDiv">
+                                                                                    <div class="row my-2">
+                                                <div class="col-sm-7 col-12 text-sm-left order-2 order-sm-1">
+                                                    <h4 class="text-primary">Punjab Walled Cities and Heritage Areas Authority</h4>
+                                                    <span style="display:block;">Code: 2609202</span>
+                                                    <span style="display:block;">Walled City Of Lahore Authority</span>
+                                                </div>
+                                                <div class="col-sm-5 col-12 text-sm-left order-2 order-sm-1">
+                                                    <h4 class="text-danger">Last Application Date: 2026-09-28</h4>
+                                                    <span style="display:block;">Announce Date: 2026-09-11</span>
+                                                    <span style="display:none;">Tentative Test Date: 2026-10-12</span>
+                                                </div>
+                                            </div>
+                                                                                                                        <div class="row">
+                                                    <div class="col-lg-12">
+                                                        <h4 class="text-primary">Attachment:</h4>
+                                                    </div>
+</div>           
+                                        <table class="table table-bordered table-condensed mb-0" id="advertTable">
+                                                <thead>
+                                                <tr class="border-0">
+                                                     <th scope="col" class="text-center">Sr No.</th>
+                                                     <th scope="col" class="text-center">Attachment Name</th>
+                                                    <th scope="col" class="text-center">Download File</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                    
+                                                                                                                                                                                                                                            <tr>                                                                 
+                                                                <td class="text-center"> 1 </td>
+                                                                <td class="text-center">Advertisement</td>
+                                                                 <td class="text-center"><a href="https://portal.nts.org.pk/uploads/projects/1789111784_WCLA ad.jpg" target="_blank" download>Click here</a></td>
+                                                                </tr>
+                                                                                                                                                                                                                                                                                        </tbody>
+                                            </table>
+                                        
+                                        <br>
+                                                                                                                                                                    <br >
+
+                                        <!-- / Project Information Ended Here -->
+                                        <div class="invoice-product-details">
+                                            <div class="postbox">
+                                              
+                                                <tbody>
+                                                                                                                                                        
+                                                        <div style="border-bottom: 1px solid gainsboro;">
+                                                        <div style="margin-left: 20px; margin-right:15px;">
+                                                            <td>
+                                                                <div class="row">
+                                                                    <div class="col-sm-9">
+                                                                        <b>Post Name:</b>&nbsp;&nbsp;<span style="color: green;font-weight: 700;"><u>Deputy Director (Design) BPS-18 </u></span>
+                                                                        <span class="text-primary text-right font-weight-bold">(Online)</span>
+                                                                    </div>
+                                                                    <div class="col-sm-3  text-right" style="margin-top:8px;">
+                                                                                                                                            <a href="/register" style="background: #F78410;color: #fff;padding: 6px;border-radius: 5px;"> Apply Now</a>
+                                                                                                                                        </div>
+                                                                </div>
+                                                                <br>
+                                                                                                                                                                                                <b>Fee:</b> 750 + 10 Service charges<br>
+                                                                                                                              <b> Age Limit:</b> 26 -   40   Years <br>
+                                                                                                                                                                                                    <ul>
+                                                                                                                                                                                                                                                                                                                                       </div>
+                                                                
+                                                            
+                                                         
+                                                        </td>
+                                                    <hr>
+                                                    
+                                                    
+                                                    </div>
+                                                                                                            
+                                                        <div style="border-bottom: 1px solid gainsboro;">
+                                                        <div style="margin-left: 20px; margin-right:15px;">
+                                                            <td>
+                                                                <div class="row">
+                                                                    <div class="col-sm-9">
+                                                                        <b>Post Name:</b>&nbsp;&nbsp;<span style="color: green;font-weight: 700;"><u>Computer Operator (BPS-12) </u></span>
+                                                                        <span class="text-primary text-right font-weight-bold">(Online)</span>
+                                                                    </div>
+                                                                    <div class="col-sm-3  text-right" style="margin-top:8px;">
+                                                                                                                                            <a href="/register" style="background: #F78410;color: #fff;padding: 6px;border-radius: 5px;"> Apply Now</a>
+                                                                                                                                        </div>
+                                                                </div>
+                                                                <br>
+                                                                                                                                                                                                <b>Fee:</b> 750 + 10 Service charges<br>
+                                                                                                                              <b> Age Limit:</b> 18 -   25   Years <br>
+                                                                                                                                                                                                    <ul>
+                                                                                                                                                                                                                                                                                                                                       </div>
+                                                                
+                                                            
+                                                         
+                                                        </td>
+                                                    <hr>
+                                                    
+                                                    
+                                                    </div>
+                                                                                                                                                                                                            </tbody>
+                                                </div>
+
+                                  
+											
+
+                                        </div>
+                                    </div> <!-- /print div ends -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+
+
+
+                           </div>
+                        </div>
+                        <!--------------Get Related Post Start Div--------------------->
+                        <div role="tabpanel" class="tab-pane fade" id="post"></div>
+                          
+                        <!--------------------Get Related Post End Div------------------>
+                        <div role="tabpanel" class="tab-pane fade" id="termCondition">
+                           <div class="col-md-12 content_area">
+                              <article id="post-459" class="post-459 page type-page status-publish hentry">
+                                 <header class="entry-header">
+                                    <h1 class="entry-title">Terms &amp; Conditions</h1>
+                                 </header>
+                                 <div class="entry-content">
+                                   <p>
+                                   The terms and conditions of this Policy govern your use of NTS.ORG.PK', an online portal for both applicants (Both Admissions and Recruitment Applicants) (hereinafter referred to as the "NTS Portal"). The terms of this Policy are applicable to all applicants who use or access this Portal for admission related applications as well as recruitment related applications in an individual capacity, including authorized users, or other persons using or accessing the Portal (the "User(s)"). Furthermore, anyone agreeing to the terms of this Policy or on behalf of any person represents and warrants that they have the authority to bind said person to the Policy and are therefore accepting the terms and condition hereunder on behalf of that person.  
+                                   </p>
+                                   <p>
+                                   NTS bears no responsibility for any Job Offer or Admission Confirmation for the applications processed through the portal.
+                                  </p>
+                                  <p>
+                                  NTS makes no implied or express representations or warranties regarding the completeness, timeliness or accuracy of the User Content submitted on the Portal and shall not be held liable for any error results, whether directly or indirectly, from an individual’s reliance on information provided on the Portal by anyone other than NTS.            
+                                 </p>
+                                 <p>
+                                 NTS reserves the right, in its sole discretion, to remove User Content from the Portal; however, no obligation exists on NTS to definitively undertake any such action.
+                                 </p>
+                                 <p>
+                                 NTS shall, in no manner or form, be responsible for the Portal services and/or User Content being secure or free from any errors, bugs, viruses and other harmful components’ and/or functioning free of any and all interruption, theft or destruction. No claims shall be entertained by NTS with regards to:
+                             </p>
+                             <ol>
+                                  <li class="text-color">
+                                  Usage of the Platform in combination with any third-party materials, applications, platforms or software.
+                                 </li>
+                                 <li class="text-color">
+                                 	Liability, direct or otherwise, for any infrastructure related issues such as viruses, worms, operating system downtime, hardware/operating system (OS) errors/glitches, denial of service, delays, OS software lags and/or any other forces on the internet that may cause disruptions to the functionality, implementation, support or access to the Platform and as a result of which Users and/or third-parties are affected in any manner.
+                                 </li>
+                                 </ol>
+                                 <p>
+                                 No liability shall be incurred by NTS for any loss, damage, delays or failures arising out of use of the Platform and attributable to acts beyond NTS’s control, including but not limited to acts of God, changes to laws, embargoes, wars, terrorist acts, acts or omissions of third-party’s, epidemics, explosions, socio-economic instability, natural calamities, power outages, weather conditions, acts of hackers, internet issues service providers, any outside forces that disrupt the functionality of the Platform and acts or omissions of the User or any third party.
+                                 </p>
+                                 <p>
+                                 NEITHER NTS NOR ANY OTHER PARTY INVOLVED IN CREATING, PRODUCING OR DELIVERING THE PLATFORM CONTENT SHALL BE LIABLE FOR ANY INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES, INCLUDING BUT NOT LIMITED TO LOST PROFITS, LOSS OF OPERTUNITY, LOSS OF DATA, GOODWILL, SERVICE INTERRUPTION, COMPUTER DAMAGE OR SYSTEM FAILURE OR THE COST OF SUBSTITUTE SERVICES ARISING OUT OF OR IN CONNECTION WITH THIS POLICY OR FROM THE USE OF OR INABILITY TO USE THE PLATFORM, SERVICES OR CONTENT, WHETHER SUCH DAMAGES ARE BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE), PRODUCT LIABILITY, OR ANY OTHER LEGAL THEORY AND WHETHER OR NOT NTS HAS BEEN INFORMED OF THE POSSIBILITY OF SUCH DAMAGES.
+                                      <br> THE EXCLUSIONS AND LIMITATIONS SET FORTH ABOVE ARE OF ESSENCE TO THIS POLICY.
+
+                                 </p>
+                                                                    
+                  
+                                  </div>
+                              </article>
+                           </div>
+                       </div>
+
+                       <!----- start privacy policy ----------------------------------->
+                       <div role="tabpanel" class="tab-pane fade" id="privacyPolicy">
+                           <div class="col-md-12 content_area">
+                              <article id="post-459" class="post-459 page type-page status-publish hentry">
+                                 <header class="entry-header">
+                                    <h1 class="entry-title">Privacy Policy</h1>
+                                 </header>
+                                 <div class="entry-content">
+                                   <p>
+                                   NTS - PAKISTAN takes the privacy of its users very seriously. We strive to provide a safe, secure user experience. This Privacy Policy details the online data collection and usage policies and practices that apply to the NTS - PAKISTAN web site and does not apply to information we collect in any other form.
+                              The NTS - PAKISTAN web portal may contain links to other web sites over which we have no control. We are not responsible for the privacy policies or practices of other web sites to which you choose to link from our site. We encourage you to review the privacy policies of those sites so you can understand how they collect, use and share your information.
+                                   </p>
+                                   <b>
+                                   Usage and Information Collection by NTS - PAKISTAN
+                                   </b>
+                                   <p>
+
+                                   When you create profile by registering on our site, we request the following personally identifiable information from you: your name, address, e-mail address, telephone number, physical address, date of birth, educational information and employment record and the information required for specific application as required by our clients. We also collect demographic information that is not unique to you such as gender, religion, domicile etc.
+                                   <p>
+
+                                   We also gather information about our users' use of NTS - PAKISTAN, such as what areas of the site you visit and what services you access. We collect your IP address, browser type, domain names, access times and referring Web site addresses. This information is logged to help diagnose technical problems, as well as administer the site in order to constantly improve the quality of our site and service to you. We may also track and analyze aggregate usage and volume statistics from our site to improve the services we offer on our site. None of this information is linked to your personally identifiable information.
+                                 </p>
+                                 <p>We also gather information about our users' use of NTS - PAKISTAN, such as what areas of the site you visit and what services you access. We collect your IP address, browser type, domain names, access times and referring Web site addresses. This information is logged to help diagnose technical problems, as well as administer the site in order to constantly improve the quality of our site and service to you. We may also track and analyze aggregate usage and volume statistics from our site to improve the services we offer on our site. None of this information is linked to your personally identifiable information.
+                                 </p>
+                                 <b>
+                                 Our Use of Your Information
+                                 </b>
+                                 <p>
+                                   
+                                 We use the information we gather on NTS - PAKISTAN, whether personal, demographic, aggregate or technical, for the purpose of operating and improving the NTS - PAKISTAN web site, creating a positive user experience, and delivering the tools and services that we offer.                                
+                              </p>
+                                 <p>
+                                 We use your email and mobile number to send you notifications from our site that may include your application status, fee status, roll number issuance, result/merit lists and job alerts along with email newsletters. We send notification emails rarely such as to notify you of any technical issues or service related issues that may affect your access to the site. You generally cannot opt-out of these kinds of communications. You can opt out of receiving newsletters from our site by clicking unsubscribe link at the bottom. If you use a bulletin board or chat room related to NTS m- Pakistan on this website or elsewhere, you should be aware that any personally identifiable information you submit there can be read, collected or used by other users of these forums, and could be used to send you unsolicited messages. We are not responsible for the personally identifiable information you choose to submit in these forums.                             </p>
+                                 </p>
+                                 <b>
+                                 Disclosure of Personal Information to Third Parties
+                                 </b>
+                                 <p>
+                                 We do not disclose your personally identifiable information to third parties for their promotional purposes, your information is only for the use of NTS-Pakistan and the client/institution for the purpose you have applied for.
+                                 </p>
+                                   <ol>
+                                  <li class="text-color">
+                                  	We use third party service providers to administer some of our services to you on our site. We use third party service providers to administer payments. We also use a third party service provider to host our website as well as serve you with our newsletters via email. These service providers are not authorized to use your personally identifiable information for their promotional purposes                                 </li>
+                                 <li class="text-color">
+                                 	We disclose information if legally required to do so, if requested to do so by a governmental entity or if we believe in good faith that such action is necessary to: (a) conform to legal requirements or comply with legal process such as in complying with a judicial proceeding, court order or subpoena; (b) protect our copyrights or property or our affiliated companies; (c) prevent a crime or protect national security; or (d) protect the personal safety of users or the public.             
+                                   </li>
+                                   <li class="text-color">
+                                   In the event of a sale or merger of our business, your information would be a part of the assets transferred. In addition, in the event we become the subject of a bankruptcy proceeding, whether voluntary or involuntary, we or our trustee in bankruptcy may sell, license or otherwise dispose of such information in a transaction approved by the bankruptcy court. In the event of any such circumstances, you will be notified via email or through a prominent notice posted on the NTS - PAKISTAN Website.
+                                 </li>
+                                 </ol>
+                                     <b>
+                                     Personal Information on Resumes and Profiles   
+                                 </b>
+                                 <p>
+                                 Since NTS - PAKISTAN is a Testing / career site, we give you two options regarding the accessibility of your resume:
+                                 </p>
+                                  <ol>
+                                 <li class="text-color">
+                                 	You can store your profile in our database. This means that you can use it to apply for a job / test online; however, employers and recruiters will not have access to search it. 
+                                 </li>
+
+                                 <li class="text-color">
+                                 But if apply to a job posting/test on NTS - PAKISTAN, the employer to whom you send your resume will be able to view all of your information
+                                 </li>
+                                 </ol>
+                                 <p>
+                                 You may change your profile information any time but you can only change your submitted application once after submitting application on a specific job/test on NTS website but you cannot delete your submitted application on NTS web site. Intended employers, recruiters for which you have submitted the application will have access to application database as well as parties who have otherwise gained access may have retained a copy of your application in their own files or databases. We are not responsible for the retention, use or privacy of resumes or profiles in these instances.
+                                 </p>
+                                 <b>
+                                 Posting to Public Areas of NTS - PAKISTAN
+                                 </b>
+                                 <p>
+                                 Please remember that if you post any of your personal information in public areas of NTS website or social media sites, such information may be collected and used by others over whom we have no control. We are not responsible for the use made by third parties of information you post or otherwise make available in public areas of NTS website.
+                                 </p>
+                                 <b>
+                                 Use of Cookies
+                                 </b>
+                                 <p>
+                                 We usually do not use but may use "cookies" to help personalize and maximize your online experience. A cookie is a text file that is placed on your hard drive by a Web page server. Cookies are not used to run programs or deliver viruses to your computer. Cookies are uniquely assigned to your computer, and can only be read by a Web server in the domain that issued the cookie to you.
+                                 </p>
+                                 <p>
+                                 One of the primary purposes of cookies is to save you time. The purpose of a cookie is to tell the Web server that you have returned to a specific page. For example, if you personalize NTS pages, or register for services, a cookie helps us to recall your specific information (such as user name, password and preferences). Because of our use of cookies, we can deliver faster and more accurate results and a more personalized site experience. When you return to NTS website, the information you previously provided can be retrieved, so you can easily use the features that you customized.
+                                 </p>
+                                 <p>
+                                 You may have the ability to accept or decline cookies. Most Web browsers automatically accept cookies, but you can usually modify your browser setting to decline all cookies if you prefer. Alternatively, you may be able to modify your browser setting to notify you each time a cookie is tendered and permit you to accept or decline cookies on an individual basis. If you choose to decline cookies, however, that may hinder performance and negatively impact your experience on NTS website.
+                                 </p>
+                                 <b>
+                                 Modification of Your Information
+                                 </b>
+                                    <p>
+                                    You may review, correct, update or change your account profile at any time or by emailing our information and support centre at <a href="/cdn-cgi/l/email-protection#89f8fcfbf0c9e7fdfaa7e6fbeea7f9e2"><span class="__cf_email__" data-cfemail="1d4c686f645d73696e33726f7a336d76">[email&#160;protected]</span></a> or by call centre at  <b>051-8444441</b>.
+                                We retain indefinitely all the information we gather about you in an effort to make your repeat use of NTS website, practical, and relevant. 
+                                 </p>
+                                 <b>
+                                 Security of the Profile Information
+                                 </b>
+                                 <p>
+                                 We have implemented commercially reasonable technical and organizational measures designed to secure your personal information from accidental loss and from unauthorized access, use, alteration or disclosure. However, we cannot guarantee that unauthorized third parties will never be able to defeat those measures or use your personal information for improper purposes
+                                 </p>
+                              <b>
+                              Use of Material
+                                 </b>
+                                 <p>
+                                 The contents of NTS Website such as text, graphics, images, logos, button icons, software and other material are protected under Pakistan and foreign copyright, trademark and other laws and are exclusive property of National Testing Service - Pakistan. The brands and logos of different institutions/organizations are property of respective companies. The collection, compilation, arrangement and assembly of all content on this Website is the exclusive property of National Testing Service - Pakistan and is protected by Pakistan and international copyright laws. You may not sell or modify the content on the Website or reproduce, display, publicly perform, distribute, or otherwise use its material in any way for any public or commercial purpose. The use of the content on any other Web Site or in a networked computer environment for any purpose is prohibited.
+                                 </p>
+                              <b>
+                              Children's use of NTS Website
+                                 </b>
+                           <p>
+                           The NTS - PAKISTAN web site is not intended for children under 10 years of age. We do not knowingly collect personal information from children under 10, parental supervision is recommended.
+                            </p> 
+                        <b>
+                        Privacy Policy Modifications
+                                 </b>
+                       <p>If we decide to materially change our Privacy Policy for NTS - PAKISTAN, we will post those changes through a prominent notice on the web site prior to the change taking place so that you will always know what information we gather, how we might use that information, and to whom we will disclose it.
+                        If at any time, you have questions or concerns about this Privacy Policy or believe that we have not adhered to this Privacy Policy, please feel free to use our feedback form. We will use commercially reasonable efforts to promptly answer your question or resolve your problem.
+                                 </p>
+                                 <b>
+                                 Contact Information
+                                 </b>
+                                 <p>
+                                 National Testing Service (NTS) established in July 2002. National Testing Service – Pakistan (NTS) was registered with the Securities and Exchange Commission of Pakistan (not-for-profit & limited by guarantee) on April 30, 2003 under Section 42 of the Companies Act, 2017. The administrative Ministry is the Ministry of Science and Technology thus NTS is currently working as a Public Sector Company (PSC) and is the legal entity which determines the purposes and means of processing the information gathered at www.nts.org.pk. You can also contact us at <a href="/cdn-cgi/l/email-protection#8ffefaeafdf6cfe1fbfca1e0fde8a1ffe4"><span class="__cf_email__" data-cfemail="502125352229103e24237e3f22377e203b">[email&#160;protected]</span></a>.
+                                 </p>
+                                 </div>
+                              </article>
+                           </div>
+                       </div>
+<!----- start privacy policy ----------------------------------->
+
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="../assets/main/jquery.min.js"></script>
+    <script type="text/javascript">
+         $(window).load(function() {
+         	// Animate loader off screen
+         	$(".loader").fadeOut("slow");
+         });
+        
+    
+      </script>
+      <script src="../assets/main/bootstrap.min.js"></script>
+   </body>
+</html>

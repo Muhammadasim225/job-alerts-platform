@@ -5,6 +5,24 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "playwright>=1.63.0",
+    "celery[redis]>=5.6.3",
+    "pdfplumber>=0.11.10",
+    "pillow>=12.3.0",
+    "pypdfium2>=5.13.0",
+    "pytesseract>=0.3.13",
+    "python-dateutil>=2.9.0.post0",
+    "redis>=6.4.0",
+    "requests>=2.34.2",
     "scrapy>=2.19.0",
+    "sentry-sdk>=2.70.0",
 ]
+
+[dependency-groups]
+dev = [
+    "fakeredis>=2.38.0",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
