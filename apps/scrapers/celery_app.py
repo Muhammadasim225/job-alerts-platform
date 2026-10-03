@@ -1,13 +1,21 @@
 """Celery application for the scraper worker.
 
-Worker:  uv run celery -A celery_app worker --loglevel=INFO --pool=solo   (use --pool=solo on Windows)
-Beat:    uv run celery -A celery_app beat --loglevel=INFO
-Flower:  uv run celery -A celery_app flower
+Queues
+  scrape    tasks.scrape_nts           light, one at a time (Redis lock)
+  process   tasks.process_nts_listing  heavy: download + OCR + store, runs in parallel
+  default   reminders, housekeeping    small and quick, never stuck behind OCR
+
+Worker:  celery -A celery_app worker -Q scrape,process,default --concurrency=4
+         (on Windows without Docker add --pool=solo)
+Beat:    celery -A celery_app beat
+To scale OCR, run more workers on the "process" queue (another container or machine
+pointed at the same Redis) — nothing else needs to change.
 """
 
 import logging
 
 from celery import Celery
+from kombu import Exchange, Queue
 
 import config
 from beat_schedule import BEAT_SCHEDULE
@@ -27,16 +35,41 @@ def init_sentry() -> None:
 
 init_sentry()
 
-app = Celery("scrapers", broker=config.CELERY_BROKER_URL, backend=config.REDIS_URL, include=["tasks"])
+QUEUES = ("scrape", "process", "default")
+TASK_TIME_LIMIT = 60 * 30  # hard kill: one listing (OCR of several pages) never needs 30 min
+TASK_SOFT_TIME_LIMIT = 60 * 25
+
+app = Celery("scrapers", broker=config.CELERY_BROKER_URL, include=["tasks"])
 app.conf.update(
     timezone="Asia/Karachi",
     enable_utc=True,
-    task_acks_late=True,  # a task killed mid-run is redelivered instead of lost
+    # Reliability: a task killed mid-run (crash, deploy, OOM) is redelivered, not lost.
+    # Every task is idempotent (dedup fingerprints, claims, unique alerts), so a
+    # redelivery can never double-process or double-alert.
+    task_acks_late=True,
     task_reject_on_worker_lost=True,
-    worker_prefetch_multiplier=1,
-    task_time_limit=60 * 30,
-    task_soft_time_limit=60 * 25,
-    result_expires=60 * 60 * 24,
-    beat_schedule=BEAT_SCHEDULE,
+    worker_prefetch_multiplier=1,  # long tasks: take one at a time, leave the rest to free workers
+    task_time_limit=TASK_TIME_LIMIT,
+    task_soft_time_limit=TASK_SOFT_TIME_LIMIT,
+    # With acks_late on Redis, an unacked task is redelivered after the visibility
+    # timeout; it must exceed the longest task or long tasks would run twice.
+    broker_transport_options={"visibility_timeout": 2 * TASK_TIME_LIMIT},
     broker_connection_retry_on_startup=True,
+    # Results are not needed (runs are logged to data/runs and the DB); keep Redis lean.
+    task_ignore_result=True,
+    # OCR / PIL leak memory over time: recycle worker processes regularly.
+    worker_max_tasks_per_child=20,
+    worker_max_memory_per_child=600_000,  # KiB
+    # Each queue has its own exchange and routing key. With one shared key, a direct
+    # exchange delivers every message to every queue bound to it, i.e. each task would
+    # run once per queue.
+    task_queues=[Queue(name, Exchange(name, type="direct"), routing_key=name) for name in QUEUES],
+    task_default_queue="default",
+    task_default_exchange="default",
+    task_default_routing_key="default",
+    task_routes={
+        "tasks.scrape_nts": {"queue": "scrape", "routing_key": "scrape"},
+        "tasks.process_nts_listing": {"queue": "process", "routing_key": "process"},
+    },
+    beat_schedule=BEAT_SCHEDULE,
 )

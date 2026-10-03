@@ -268,3 +268,25 @@ def queue_deadline_reminders_task(days_before: int = 2) -> int:
     n = queue_reminders(days_before)
     log.info("Queued %d deadline reminder(s)", n)
     return n
+
+
+def cleanup_old_runs(retention_days: int, keep_latest: int = 5) -> int:
+    """Delete run summaries and scrape feeds older than retention_days, always keeping
+    the newest few (main.py process reads the latest feed). Returns files deleted."""
+    cutoff = time.time() - retention_days * 86400
+    files = sorted(config.RUNS_DIR.glob("*"), key=lambda p: p.stat().st_mtime, reverse=True)
+    deleted = 0
+    for path in files[keep_latest:]:
+        if path.is_file() and path.stat().st_mtime < cutoff:
+            path.unlink()
+            deleted += 1
+    return deleted
+
+
+@app.task(name="tasks.housekeeping")
+def housekeeping() -> dict:
+    """Daily: keep disk usage flat (raw snapshots and attachments are kept; they are
+    deduplicated by content and are the debugging record of each listing)."""
+    deleted = cleanup_old_runs(config.RETENTION_DAYS)
+    log.info("Housekeeping: deleted %d old run file(s)", deleted)
+    return {"deleted_run_files": deleted}

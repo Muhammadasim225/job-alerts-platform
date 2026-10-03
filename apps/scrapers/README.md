@@ -91,8 +91,17 @@ docker compose exec scraper-worker celery -A celery_app call tasks.scrape_nts   
 docker compose logs -f scraper-worker
 ```
 
-Beat runs `tasks.scrape_nts` every `NTS_SCRAPE_INTERVAL_HOURS` (default 3) in Asia/Karachi time.
-A Redis lock prevents overlapping runs.
+Beat runs the pipeline **once a day** (Asia/Karachi time). The times can be changed in `.env`:
+
+| Time | Task | Queue |
+|---|---|---|
+| 03:00 (`HOUSEKEEPING_HOUR`) | delete run logs older than `RUN_LOG_RETENTION_DAYS` (30) | default |
+| 06:00 (`NTS_SCRAPE_HOUR`, `NTS_SCRAPE_MINUTE`) | scrape NTS, then one task per new or changed listing | scrape → process |
+| 09:00 (`REMINDER_HOUR`) | queue deadline reminders `REMINDER_DAYS_BEFORE` (2) days ahead | default |
+
+A run missed because the machine was off starts when Beat comes back. A Redis lock stops overlapping scrapes.
+Listings are processed in parallel on the `process` queue (`WORKER_CONCURRENCY`, default 4). Every task is
+idempotent, so a crash or redelivery never processes or alerts twice.
 
 ## Output (`data/`, git-ignored)
 
@@ -111,5 +120,5 @@ Storing records in Postgres is Phase 3. The JSON shape above is the input for th
 
 ## Environment variables
 
-`REDIS_URL`, `DATA_DIR`, `TESSERACT_CMD`, `OCR_LANGS` (default `eng`), `NTS_SCRAPE_INTERVAL_HOURS`,
+`REDIS_URL`, `DATA_DIR`, `TESSERACT_CMD`, `OCR_LANGS` (default `eng`), `NTS_SCRAPE_HOUR`, `WORKER_CONCURRENCY`,
 `SCRAPER_DOWNLOAD_DELAY` (seconds, default 2), `SENTRY_DSN` (optional; enables error reporting from the worker and beat).
