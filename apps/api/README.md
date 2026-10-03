@@ -47,6 +47,17 @@ For the Telegram bot and back office. These endpoints are disabled if `INTERNAL_
 | `GET /admin/review-queue`, `POST /admin/listings/{id}/verify` | Human spot checks (launch checklist) |
 | `POST /admin/scrape?force=false` | Queue an NTS run now (Celery `scrape` queue) |
 
+## Observability
+
+- **Request ID:** every response has `X-Request-ID`. It is the client's own ID if it sent a valid one, otherwise a new
+  one. The same ID is on every log line of that request and on its Sentry event. A 500 response returns
+  `{"detail": "Internal server error", "request_id": ...}` and never the error details.
+- **Access log:** one logfmt line per request, e.g.
+  `level=INFO logger=api.access request_id=... method=GET path=/v1/listings status=200 duration_ms=12.4`.
+  Requests slower than `SLOW_REQUEST_MS` (1000) are logged at WARNING. `LOG_LEVEL` sets verbosity.
+- **Sentry:** set `SENTRY_DSN` (and optionally `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`) to report
+  unhandled errors. No user PII is sent.
+
 ## Health
 
 `GET /health` checks Postgres and Redis and returns 503 when either is down. `GET /health/live` checks only that the

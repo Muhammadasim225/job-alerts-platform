@@ -13,6 +13,7 @@ pointed at the same Redis) — nothing else needs to change.
 """
 
 import logging
+import os
 
 from celery import Celery
 from kombu import Exchange, Queue
@@ -29,7 +30,15 @@ def init_sentry() -> None:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
 
-    sentry_sdk.init(dsn=config.SENTRY_DSN, integrations=[CeleryIntegration(monitor_beat_tasks=True)], traces_sample_rate=0.0)
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        environment=os.getenv("SENTRY_ENVIRONMENT", "development"),
+        # monitor_beat_tasks: each Beat schedule becomes a Sentry cron monitor, so a daily
+        # run that did not happen (machine off, worker stuck) raises an alert, not silence
+        integrations=[CeleryIntegration(monitor_beat_tasks=True)],
+        traces_sample_rate=0.0,
+        send_default_pii=False,
+    )
     log.info("Sentry enabled")
 
 
@@ -72,4 +81,7 @@ app.conf.update(
         "tasks.process_nts_listing": {"queue": "process", "routing_key": "process"},
     },
     beat_schedule=BEAT_SCHEDULE,
+    # Task events for Flower (live task view); cheap at our volume
+    worker_send_task_events=True,
+    task_send_sent_event=True,
 )

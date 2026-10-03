@@ -8,21 +8,19 @@
 Run: uvicorn app.main:app --host 0.0.0.0 --port 8000
 """
 
-import logging
-
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.observability import RequestContextMiddleware, init_sentry, setup_logging
 from app.ratelimit import RateLimitMiddleware
 from app.routers import health, internal, public
 
-log = logging.getLogger("api")
-
 
 def create_app() -> FastAPI:
+    setup_logging()
+    init_sentry()
     app = FastAPI(
         title="SarkariAlert API",
         version="1.0.0",
@@ -35,13 +33,10 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["*"],
+        expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"],
     )
-
-    @app.exception_handler(Exception)
-    async def unhandled(request: Request, exc: Exception):  # noqa: ARG001
-        # Never leak stack traces or SQL to clients; the details go to the logs / Sentry.
-        log.exception("Unhandled error on %s %s", request.method, request.url.path)
-        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    # Added last = outermost: every response (incl. 429 and 500) gets a request id and an access log line
+    app.add_middleware(RequestContextMiddleware)
 
     app.include_router(health.router)
     app.include_router(public.router)

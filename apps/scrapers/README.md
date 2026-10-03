@@ -103,6 +103,13 @@ A run missed because the machine was off starts when Beat comes back. A Redis lo
 Listings are processed in parallel on the `process` queue (`WORKER_CONCURRENCY`, default 4). Every task is
 idempotent, so a crash or redelivery never processes or alerts twice.
 
+## Monitoring
+
+- **Flower** (Celery dashboard): http://localhost:5555, logging in with `FLOWER_BASIC_AUTH` from `.env`. It shows
+  workers, queues, running and failed tasks, and their runtimes. It is bound to localhost only.
+- **Sentry:** with `SENTRY_DSN` set, task errors are reported. Each Beat schedule (daily scrape, reminders,
+  housekeeping) also becomes a Sentry **cron monitor**, so a run that did not happen raises an alert.
+
 ## Output (`data/`, git-ignored)
 
 | Path | Contents |
