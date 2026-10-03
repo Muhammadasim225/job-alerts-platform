@@ -20,7 +20,7 @@ from nts import dedup
 from nts.downloader import download_listing_attachments, listing_files_changed
 from nts.normalizer import normalize_listing, save_normalized
 from nts.parser import parse_file, save_parsed
-from nts.store import store_record
+from nts.store import queue_alerts, queue_reminders, store_record
 from nts.syllabus import extract_test_syllabus
 from nts.tables import extract_post_table, rows_from_tables
 from nts.run_spider import crawl_nts
@@ -106,6 +106,7 @@ def process_listing(listing: dict) -> dict:
     out = save_normalized(record)
     # Raises on a DB error: the listing then stays unmarked and is retried next run
     stored = store_record(record)
+    alerts_queued = queue_alerts(stored, record)
 
     if download_errors:
         # Leave it unmarked so the next run retries the missing file (a Word file
@@ -125,6 +126,7 @@ def process_listing(listing: dict) -> dict:
         "needs_review": record["needs_review"],
         "output": out,
         "db": stored,
+        "alerts_queued": alerts_queued,
     }
 
 
@@ -258,3 +260,11 @@ def process_nts_listing(listing: dict) -> dict:
     result = process_listing(listing)
     dedup.release_claim(listing)
     return result
+
+
+@app.task(name="tasks.queue_deadline_reminders")
+def queue_deadline_reminders_task(days_before: int = 2) -> int:
+    """Daily: second alert N days before the last date (sent by the bot, Phase 5)."""
+    n = queue_reminders(days_before)
+    log.info("Queued %d deadline reminder(s)", n)
+    return n

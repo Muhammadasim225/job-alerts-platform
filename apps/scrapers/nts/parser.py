@@ -266,6 +266,10 @@ def _vlm_page(image, doc: "ParsedDocument") -> str | None:
         return None
     try:
         raw = vlm.ocr_image(image)
+    except vlm.QuotaExhausted as exc:
+        # Expected on the free tier: read with Tesseract, no review flag for this
+        log.info("VLM skipped: %s", exc)
+        return None
     except Exception as exc:
         log.warning("VLM OCR failed, using Tesseract: %s", exc)
         doc.warnings.append(f"VLM OCR failed: {exc}")
