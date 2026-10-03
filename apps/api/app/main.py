@@ -16,6 +16,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.ratelimit import RateLimitMiddleware
 from app.routers import health, internal, public
 
 log = logging.getLogger("api")
@@ -28,6 +29,7 @@ def create_app() -> FastAPI:
         description="Pakistan government job and admission listings (NTS first), consolidated from official sources.",
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.rate_limit_per_minute, redis_url=settings.redis_url)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
