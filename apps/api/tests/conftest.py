@@ -5,6 +5,11 @@ transaction that is rolled back. Skipped if Postgres is unreachable."""
 import json
 import os
 import re
+
+# Endpoint tests must not share a rate-limit budget on the real Redis; the limiter
+# has its own tests (test_ratelimit.py) with a fake Redis.
+os.environ["RATE_LIMIT_PER_MINUTE"] = "0"
+
 from datetime import date, timedelta
 from pathlib import Path
 

@@ -21,6 +21,14 @@ Filters on `/v1/listings` and `/v1/vacancies`:
 Responses send `Cache-Control: public, max-age=300`, because data changes once a day. Internal columns (file paths,
 raw snapshots, review notes) are never returned.
 
+### Rate limiting
+
+Public `/v1` endpoints allow `RATE_LIMIT_PER_MINUTE` (default 120) requests per client IP per minute. The count is kept
+in Redis, so it is shared by all API workers and servers. Responses carry `X-RateLimit-Limit`, `-Remaining` and
+`-Reset`. Over the limit, the API returns `429` with `Retry-After`. Internal endpoints and `/health` are not limited.
+If Redis is down, requests are allowed (fail-open) and a warning is logged. Behind a reverse proxy, set
+`FORWARDED_ALLOW_IPS` to the proxy's address so the real client IP is used.
+
 ## Internal (`/v1/internal`, header `X-API-Key: $INTERNAL_API_KEY`)
 
 For the Telegram bot and back office. These endpoints are disabled if `INTERNAL_API_KEY` is not set.
@@ -53,8 +61,8 @@ curl "localhost:8000/v1/listings?kind=job&province=Punjab"
 curl -H "X-API-Key: $INTERNAL_API_KEY" localhost:8000/v1/internal/admin/overview
 ```
 
-Settings come from `.env`: `DATABASE_URL`, `REDIS_URL`, `INTERNAL_API_KEY`, `CORS_ORIGINS` (comma-separated) and
-`API_WORKERS` (uvicorn workers, default 2).
+Settings come from `.env`: `DATABASE_URL`, `REDIS_URL`, `INTERNAL_API_KEY`, `CORS_ORIGINS` (comma-separated),
+`API_WORKERS` (uvicorn workers, default 2) and `RATE_LIMIT_PER_MINUTE` (default 120, 0 disables).
 
 ## Tests
 

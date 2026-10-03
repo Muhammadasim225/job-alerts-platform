@@ -16,6 +16,8 @@ class Settings:
     # Empty = internal endpoints are disabled (never open by accident).
     internal_api_key: str = field(default_factory=lambda: os.getenv("INTERNAL_API_KEY", ""))
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "http://localhost:3000")))
+    # Public /v1 requests per client IP per minute (0 disables)
+    rate_limit_per_minute: int = field(default_factory=lambda: int(os.getenv("RATE_LIMIT_PER_MINUTE", "120")))
     default_page_size: int = 20
     max_page_size: int = 100
 
