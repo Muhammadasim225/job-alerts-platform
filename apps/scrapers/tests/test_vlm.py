@@ -42,6 +42,11 @@ class FakeSession:
 
 @pytest.fixture
 def configured(monkeypatch, tmp_path):
+    import fakeredis
+    from nts import dedup
+
+    # Never touch the real local Redis: its pause flag / budget would leak into tests
+    monkeypatch.setattr(dedup, "get_redis", lambda r=fakeredis.FakeRedis(decode_responses=True): r)
     monkeypatch.setattr(config, "DEAPI_API_KEY", "test-key")
     monkeypatch.setattr(config, "VLM_CACHE_DIR", tmp_path / "vlm")
     monkeypatch.setattr(vlm, "_take_budget", lambda: True)
