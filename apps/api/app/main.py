@@ -16,7 +16,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.routers import health
+from app.routers import health, public
 
 log = logging.getLogger("api")
 
@@ -42,6 +42,7 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
     app.include_router(health.router)
+    app.include_router(public.router)
     return app
 
 
