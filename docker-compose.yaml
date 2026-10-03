@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   api:
     build: ./apps/api
@@ -23,9 +22,37 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    # AOF persistence: dedup state must survive restarts, or every listing looks new again
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  scraper-worker:
+    build: ./apps/scrapers
+    image: sarkarialert-scrapers:latest
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./apps/scrapers/data:/app/data
+    depends_on:
+      - redis
+
+  scraper-beat:
+    # Same image as scraper-worker (built once by that service)
+    image: sarkarialert-scrapers:latest
+    restart: always
+    command: celery -A celery_app beat --loglevel=INFO --schedule=/app/data/celerybeat-schedule
+    env_file:
+      - .env
+    volumes:
+      - ./apps/scrapers/data:/app/data
+    depends_on:
+      - redis
 
 
 volumes:
   postgres_data:
+  redis_data:
