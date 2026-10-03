@@ -8,6 +8,7 @@ dependencies = [
     "celery[redis]>=5.4",
     "fastapi>=0.141.1",
     "redis>=5",
+    "sentry-sdk[fastapi]>=2.20",
     "shared",
     "uvicorn[standard]>=0.30",
 ]
