@@ -20,8 +20,8 @@ def store(session, name, **overrides):
     return upsert_listing(session, rec).listing
 
 
-def user(session, chat_id, **pref):
-    u = User(telegram_chat_id=chat_id, preference=Preference(**pref))
+def user(session, n, **pref):
+    u = User(email=f"user{n}@example.com", preference=Preference(**pref))
     session.add(u)
     session.flush()
     return u

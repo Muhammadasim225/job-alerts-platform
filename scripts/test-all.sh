@@ -6,7 +6,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 status=0
-for dir in apps/scrapers packages/shared apps/api; do
+for dir in apps/scrapers packages/shared apps/api apps/notifier; do
   echo "== $dir"
   (cd "$dir" && uv run pytest -q) || status=1
 done

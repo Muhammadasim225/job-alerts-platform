@@ -196,16 +196,19 @@ def _csv(value: str | None) -> list[str]:
 
 
 def cmd_user_add(args) -> None:
-    """Dev helper until the Telegram bot exists: create/update a subscriber."""
+    """Dev helper (the website signs users up by email code): create/update a user."""
+    from datetime import UTC, datetime
+
     from sqlalchemy import select
 
     from shared.db import session_scope
     from shared.models import Preference, User
 
     with session_scope(config.DATABASE_URL) as s:
-        user = s.scalar(select(User).where(User.telegram_chat_id == args.chat_id))
+        email = args.email.strip().lower()
+        user = s.scalar(select(User).where(User.email == email))
         if user is None:
-            user = User(telegram_chat_id=args.chat_id, name=args.name)
+            user = User(email=email, name=args.name, email_verified_at=datetime.now(UTC))
             s.add(user)
         user.preference = Preference(
             kinds=_csv(args.kinds) or ["job"],
@@ -219,7 +222,7 @@ def cmd_user_add(args) -> None:
             max_experience_years=args.max_experience,
         )
         s.flush()
-        print(f"User {user.id} (chat {user.telegram_chat_id}) saved")
+        print(f"User {user.id} ({user.email}) saved")
 
 
 def cmd_match(args) -> None:
@@ -231,7 +234,7 @@ def cmd_match(args) -> None:
     from shared.models import Listing, Program, User, Vacancy
 
     with session_scope(config.DATABASE_URL) as s:
-        user = s.scalar(select(User).where(User.telegram_chat_id == args.chat_id))
+        user = s.scalar(select(User).where(User.email == args.email.strip().lower()))
         if user is None:
             sys.exit("No such user; add one with user-add")
         for m in matches_for_user(s, user):
@@ -267,15 +270,15 @@ def cmd_alerts(args) -> None:
 
     with session_scope(config.DATABASE_URL) as s:
         rows = s.execute(
-            select(Alert, User.telegram_chat_id, Listing.external_id, Listing.title)
+            select(Alert, User.email, Listing.external_id, Listing.title)
             .join(User, User.id == Alert.user_id)
             .join(Listing, Listing.id == Alert.listing_id)
             .order_by(Alert.created_at.desc())
             .limit(args.limit)
         ).all()
-        for alert, chat_id, ext_id, title in rows:
+        for alert, email, ext_id, title in rows:
             n = len(alert.matched_vacancy_ids) + len(alert.matched_program_ids)
-            print(f"[{alert.status:7}] {alert.alert_type:17} chat {chat_id:<12} {ext_id:40} {n} match(es)  {title[:45]}")
+            print(f"[{alert.status:7}] {alert.alert_type:17} {email:28} {ext_id:40} {n} match(es)  {title[:45]}")
         print(f"{len(rows)} alert(s)")
 
 
@@ -324,8 +327,8 @@ def main() -> None:
     s = sub.add_parser("db-backfill", help="load data/normalized/*.json into Postgres")
     s.set_defaults(func=cmd_db_backfill)
 
-    s = sub.add_parser("user-add", help="dev: create/update a subscriber and their preferences")
-    s.add_argument("chat_id", type=int)
+    s = sub.add_parser("user-add", help="dev: create/update a user and their preferences")
+    s.add_argument("email")
     s.add_argument("--name")
     s.add_argument("--kinds", help="job,admission,test (default job)")
     s.add_argument("--fields", help="e.g. it,engineering,health")
@@ -339,7 +342,7 @@ def main() -> None:
     s.set_defaults(func=cmd_user_add)
 
     s = sub.add_parser("match", help="dev: live listings that match a user")
-    s.add_argument("chat_id", type=int)
+    s.add_argument("email")
     s.set_defaults(func=cmd_match)
 
     s = sub.add_parser("queue-alerts", help="queue alerts for open listings already in the DB")

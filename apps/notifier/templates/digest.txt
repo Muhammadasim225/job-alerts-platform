@@ -1,0 +1,14 @@
+{{ subject }}
+
+{% for item in items %}
+{% include "_item.txt" %}
+{# trim_blocks eats the newline after the include: put back the line end and a blank line #}
+{{ "\n" }}
+{% endfor %}
+All your alerts: {{ inbox_url }}
+Always confirm details on the official advert before applying.
+
+--
+You get this because you signed up for SarkariAlert job alerts.
+Change what you get: {{ settings_url }}
+Stop these emails: {{ unsubscribe_url }}

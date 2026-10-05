@@ -153,7 +153,7 @@ def queue_alerts_for_listing(session: Session, listing_id: int, alert_type: str 
 
 
 def matches_for_user(session: Session, user: User, today: date | None = None) -> list[Match]:
-    """All live listings that suit a user (for "show me current jobs" in the bot)."""
+    """All live listings that suit a user (the "jobs for me" page)."""
     if user.preference is None:
         return []
     today = today or date.today()

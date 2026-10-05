@@ -19,7 +19,7 @@ ignore = [
 ]
 
 [lint.isort]
-known-first-party = ["shared", "app", "nts", "config", "tasks", "celery_app", "beat_schedule"]
+known-first-party = ["shared", "app", "nts", "config", "tasks", "celery_app", "beat_schedule", "service", "channels", "content", "vapid"]
 
 [format]
 quote-style = "double"

@@ -9,7 +9,18 @@ from shared.models import Alert, Listing, Preference, User, Vacancy
 
 def test_migrations_create_all_tables(session):
     tables = set(inspect(session.connection()).get_table_names())
-    assert {"listings", "vacancies", "programs", "attachments", "users", "preferences", "alerts"} <= tables
+    assert {
+        "listings",
+        "vacancies",
+        "programs",
+        "attachments",
+        "users",
+        "preferences",
+        "alerts",
+        "auth_sessions",
+        "push_subscriptions",
+        "deliveries",
+    } <= tables
 
 
 def _listing(**kw):
@@ -52,7 +63,7 @@ def test_listing_external_id_is_unique_per_source(session):
 
 
 def test_alert_cannot_be_queued_twice(session):
-    user = User(telegram_chat_id=111, preference=Preference())
+    user = User(email="a@example.com", preference=Preference())
     listing = _listing()
     session.add_all([user, listing])
     session.flush()
@@ -64,7 +75,15 @@ def test_alert_cannot_be_queued_twice(session):
 
 
 def test_preference_defaults(session):
-    user = User(telegram_chat_id=222, preference=Preference())
+    user = User(email="b@example.com", preference=Preference())
     session.add(user)
     session.flush()
     assert user.preference.kinds == ["job"] and user.preference.fields == []
+
+
+def test_email_is_unique(session):
+    session.add(User(email="same@example.com"))
+    session.flush()
+    session.add(User(email="same@example.com"))
+    with pytest.raises(IntegrityError):
+        session.flush()

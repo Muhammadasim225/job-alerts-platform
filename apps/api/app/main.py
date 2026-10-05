@@ -1,7 +1,9 @@
 """SarkariAlert API.
 
   /v1/...            public, read-only: listings, posts, stats (website, SEO pages, partners)
-  /v1/internal/...   X-API-Key: users & preferences, alert queue, admin (bot, back office)
+  /v1/auth/...       sign-in by emailed code -> session token
+  /v1/me/...         Bearer token: the user's settings, preferences, matches, inbox, push devices
+  /v1/internal/...   X-API-Key: back office (overview, review queue, alerts, trigger a scrape)
   /health            readiness (Postgres + Redis), /health/live liveness
   /docs              interactive OpenAPI docs
 
@@ -15,7 +17,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from app.config import settings
 from app.observability import RequestContextMiddleware, init_sentry, setup_logging
 from app.ratelimit import RateLimitMiddleware
-from app.routers import health, internal, public
+from app.routers import auth, health, internal, links, me, public
 
 
 def create_app() -> FastAPI:
@@ -40,6 +42,9 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(public.router)
+    app.include_router(auth.router)
+    app.include_router(me.router)
+    app.include_router(links.router)
     app.include_router(internal.router)
     return app
 

@@ -91,13 +91,16 @@ docker compose exec scraper-worker celery -A celery_app call tasks.scrape_nts   
 docker compose logs -f scraper-worker
 ```
 
-Beat runs the pipeline **once a day** (Asia/Karachi time). The times can be changed in `.env`:
+Beat runs the pipeline **once a day** (Asia/Karachi time). It is the system's only scheduler, so it also triggers the
+notifier's tasks, by name. The times can be changed in `.env`:
 
 | Time | Task | Queue |
 |---|---|---|
 | 03:00 (`HOUSEKEEPING_HOUR`) | delete run logs older than `RUN_LOG_RETENTION_DAYS` (30) | default |
 | 06:00 (`NTS_SCRAPE_HOUR`, `NTS_SCRAPE_MINUTE`) | scrape NTS, then one task per new or changed listing | scrape → process |
 | 09:00 (`REMINDER_HOUR`) | queue deadline reminders `REMINDER_DAYS_BEFORE` (2) days ahead | default |
+| every 2 min | `notify.dispatch`: batch new alerts into email/push deliveries ([notifier](../notifier/README.md)) | notify |
+| 03:30 | `notify.housekeeping`: expired sessions, old deliveries | notify |
 
 A run missed because the machine was off starts when Beat comes back. A Redis lock stops overlapping scrapes.
 Listings are processed in parallel on the `process` queue (`WORKER_CONCURRENCY`, default 4). Every task is

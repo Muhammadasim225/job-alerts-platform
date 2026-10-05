@@ -9,15 +9,20 @@ import re
 # Endpoint tests must not share a rate-limit budget on the real Redis; the limiter
 # has its own tests (test_ratelimit.py) with a fake Redis.
 os.environ["RATE_LIMIT_PER_MINUTE"] = "0"
+os.environ["APP_SECRET"] = "test-app-secret"
+os.environ.pop("SENTRY_DSN", None)  # tests that raise on purpose must not reach a real Sentry project
+os.environ["VAPID_PUBLIC_KEY"] = "BTestPublicKey"
 
 from datetime import date, timedelta
 from pathlib import Path
 
+import fakeredis
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
+import app.auth as auth
 import app.deps as deps
 from app.config import Settings
 from app.main import app
@@ -92,8 +97,26 @@ def db(db_url):
 
 
 @pytest.fixture
-def client(db, monkeypatch):
+def fake_redis():
+    return fakeredis.FakeRedis()
+
+
+@pytest.fixture
+def sent_tasks(monkeypatch):
+    """Celery tasks the API queued (nothing reaches a real broker)."""
+    import app.tasks_client
+
+    calls = []
+    monkeypatch.setattr(
+        app.tasks_client, "send_task", lambda name, queue, kwargs=None, **opts: calls.append((name, queue, kwargs)) or "t-1"
+    )
+    return calls
+
+
+@pytest.fixture
+def client(db, monkeypatch, fake_redis, sent_tasks):
     app.dependency_overrides[deps.get_db] = lambda: db
+    app.dependency_overrides[auth.get_redis] = lambda: fake_redis
     monkeypatch.setattr(deps, "settings", Settings(internal_api_key=API_KEY))
     with TestClient(app) as c:
         yield c
@@ -103,4 +126,22 @@ def client(db, monkeypatch):
 @pytest.fixture
 def internal(client):
     client.headers.update({"X-API-Key": API_KEY})
+    return client
+
+
+def sign_in(client, sent_tasks, email="ali@example.com") -> dict:
+    """Full sign-in through the API; returns the /verify response."""
+    assert client.post("/v1/auth/code", json={"email": email}).status_code == 202
+    code = sent_tasks[-1][2]["code"]
+    r = client.post("/v1/auth/verify", json={"email": email, "code": code})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+@pytest.fixture
+def user_client(client, sent_tasks):
+    """A client signed in as ali@example.com."""
+    session = sign_in(client, sent_tasks)
+    client.headers.update({"Authorization": f"Bearer {session['token']}"})
+    client.me = session["user"]
     return client
