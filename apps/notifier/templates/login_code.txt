@@ -1,0 +1,7 @@
+Your SarkariAlert sign-in code is: {{ code }}
+
+It is valid for {{ ttl_minutes }} minutes and can be used once.
+
+If you did not try to sign in, ignore this email: nobody can sign in without the code.
+
+{{ web_url }}

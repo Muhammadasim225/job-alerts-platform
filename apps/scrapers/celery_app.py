@@ -4,6 +4,7 @@ Queues
   scrape    tasks.scrape_nts           light, one at a time (Redis lock)
   process   tasks.process_nts_listing  heavy: download + OCR + store, runs in parallel
   default   reminders, housekeeping    small and quick, never stuck behind OCR
+  notify    (declared only)            consumed by apps/notifier; Beat schedules into it
 
 Worker:  celery -A celery_app worker -Q scrape,process,default --concurrency=4
          (on Windows without Docker add --pool=solo)
@@ -44,7 +45,7 @@ def init_sentry() -> None:
 
 init_sentry()
 
-QUEUES = ("scrape", "process", "default")
+QUEUES = ("scrape", "process", "default", "notify")
 TASK_TIME_LIMIT = 60 * 30  # hard kill: one listing (OCR of several pages) never needs 30 min
 TASK_SOFT_TIME_LIMIT = 60 * 25
 

@@ -7,6 +7,8 @@ import config
 from beat_schedule import BEAT_SCHEDULE
 from celery_app import TASK_TIME_LIMIT, app
 
+DAILY = {name: e for name, e in BEAT_SCHEDULE.items() if name != "notify-dispatch"}
+
 
 def test_scrape_runs_once_a_day_at_six():
     s = BEAT_SCHEDULE["nts-scrape"]["schedule"]
@@ -15,13 +17,21 @@ def test_scrape_runs_once_a_day_at_six():
 
 
 def test_daily_order_housekeeping_scrape_reminders():
-    hours = {name: next(iter(e["schedule"].hour)) for name, e in BEAT_SCHEDULE.items()}
+    hours = {name: next(iter(e["schedule"].hour)) for name, e in DAILY.items()}
     assert hours["housekeeping"] < hours["nts-scrape"] < hours["deadline-reminders"]
 
 
 def test_missed_run_is_not_expired_too_soon():
     # Beat re-sends a missed daily run when it comes back; a short expiry would drop it
-    assert all(e["options"]["expires"] >= 6 * 3600 for e in BEAT_SCHEDULE.values())
+    assert all(e["options"]["expires"] >= 6 * 3600 for e in DAILY.values())
+
+
+def test_notifier_dispatch_runs_often_and_never_piles_up():
+    e = BEAT_SCHEDULE["notify-dispatch"]
+    interval = e["schedule"].total_seconds()
+    assert e["task"] == "notify.dispatch" and interval <= 300
+    assert e["options"]["queue"] == "notify" and e["options"]["expires"] < interval
+    assert BEAT_SCHEDULE["notify-housekeeping"]["options"]["queue"] == "notify"
 
 
 def test_heavy_and_light_work_use_separate_queues():
@@ -64,5 +74,5 @@ def test_cleanup_old_runs_keeps_recent_and_latest(tmp_path, monkeypatch):
 
 def test_each_queue_has_its_own_routing_key():
     keys = {q.name: (q.exchange.name, q.routing_key) for q in app.conf.task_queues}
-    assert keys == {"scrape": ("scrape", "scrape"), "process": ("process", "process"), "default": ("default", "default")}
-    assert len({k for k in keys.values()}) == 3  # no message can fan out to several queues
+    assert keys == {q: (q, q) for q in ("scrape", "process", "default", "notify")}
+    assert len(set(keys.values())) == 4  # no message can fan out to several queues

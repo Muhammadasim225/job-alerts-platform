@@ -1,0 +1,27 @@
+[project]
+name = "notifier"
+version = "0.1.0"
+description = "SarkariAlert notifier: email digests and Web Push from the alert outbox (Celery)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "celery[redis]>=5.4",
+    "cryptography>=42",
+    "jinja2>=3.1",
+    "pywebpush>=2.0",
+    "sentry-sdk>=2.20",
+    "shared",
+]
+
+[tool.uv.sources]
+shared = { path = "../../packages/shared", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = ["ignore::DeprecationWarning"]

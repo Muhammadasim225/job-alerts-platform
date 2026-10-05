@@ -1,0 +1,14 @@
+{% if item.alert_type == "deadline_reminder" %}[CLOSING SOON] {% endif %}{{ item.title }}
+{% if item.organization and item.organization != item.title %}{{ item.organization }}
+{% endif %}
+{% if item.last_date %}Last date: {{ item.last_date.strftime("%d %b %Y") }}{% if item.days_left == 0 %} (last day today){% elif item.days_left is not none %} ({{ item.days_left }} days left){% endif %}
+
+{% endif %}
+{% for post in item.posts %}
+  - {{ post }}
+{% endfor %}
+{% if item.more_posts %}
+  - and {{ item.more_posts }} more
+{% endif %}
+Details: {{ item.web_url }}
+Official advert: {{ item.official_url }}

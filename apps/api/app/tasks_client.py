@@ -26,8 +26,10 @@ def _client() -> Celery:
     return app
 
 
-def send_task(name: str, queue: str, kwargs: dict | None = None) -> str:
+def send_task(name: str, queue: str, kwargs: dict | None = None, redact: bool = False) -> str:
+    """redact: keep the arguments (e.g. a sign-in code) out of worker logs and Flower."""
     if queue not in QUEUES:
         raise ValueError(f"unknown queue {queue}")
-    result = _client().send_task(name, kwargs=kwargs or {}, queue=queue, routing_key=queue)
+    options = {"argsrepr": "()", "kwargsrepr": "{redacted}"} if redact else {}
+    result = _client().send_task(name, kwargs=kwargs or {}, queue=queue, routing_key=queue, **options)
     return result.id

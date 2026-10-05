@@ -23,7 +23,7 @@ def request_code(body: EmailIn, request: Request, r=Depends(auth.get_redis)):
     ip = request.client.host if request.client else "unknown"
     code = auth.issue_code(r, body.email, ip)
     try:
-        send_task("notify.send_login_code", queue="notify", kwargs={"email": body.email, "code": code})
+        send_task("notify.send_login_code", queue="notify", kwargs={"email": body.email, "code": code}, redact=True)
     except Exception:
         log.exception("Could not queue the sign-in email")
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Could not send the code, try again shortly") from None

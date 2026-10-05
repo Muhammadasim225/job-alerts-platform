@@ -108,7 +108,7 @@ def sent_tasks(monkeypatch):
 
     calls = []
     monkeypatch.setattr(
-        app.tasks_client, "send_task", lambda name, queue, kwargs=None: calls.append((name, queue, kwargs)) or "t-1"
+        app.tasks_client, "send_task", lambda name, queue, kwargs=None, **opts: calls.append((name, queue, kwargs)) or "t-1"
     )
     return calls
 
