@@ -214,3 +214,29 @@ def facets(session: Session, today: date) -> dict:
             .order_by(func.count(distinct(Listing.id)).desc())
         ),
     }
+
+
+def listing_summaries(session: Session, listing_ids: list[int], today: date | None = None) -> dict[int, dict]:
+    """id -> summary for any set of listings, in three queries whatever its size."""
+    today = today or date.today()
+    listings = session.scalars(select(Listing).where(Listing.id.in_(listing_ids))).all() if listing_ids else []
+    agg = _post_aggregates(session, [l.id for l in listings])
+    return {l.id: summarize(l, agg[l.id], today) for l in listings}
+
+
+def post_names(session: Session, vacancy_ids: list[int], program_ids: list[int]) -> dict[tuple[str, int], str]:
+    """("v", id) / ("p", id) -> post or programme name, in at most two queries."""
+    names = {}
+    if vacancy_ids:
+        rows = session.execute(select(Vacancy.id, Vacancy.post_name).where(Vacancy.id.in_(vacancy_ids)))
+        names.update({("v", i): n for i, n in rows})
+    if program_ids:
+        rows = session.execute(select(Program.id, Program.name).where(Program.id.in_(program_ids)))
+        names.update({("p", i): n for i, n in rows})
+    return names
+
+
+def matched_names(names: dict, vacancy_ids: list[int], program_ids: list[int]) -> list[str]:
+    return [names[("v", i)] for i in vacancy_ids if ("v", i) in names] + [
+        names[("p", i)] for i in program_ids if ("p", i) in names
+    ]

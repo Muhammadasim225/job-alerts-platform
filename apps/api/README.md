@@ -29,21 +29,45 @@ in Redis, so it is shared by all API workers and servers. Responses carry `X-Rat
 If Redis is down, requests are allowed (fail-open) and a warning is logged. Behind a reverse proxy, set
 `FORWARDED_ALLOW_IPS` to the proxy's address so the real client IP is used.
 
-## Internal (`/v1/internal`, header `X-API-Key: $INTERNAL_API_KEY`)
+## Accounts (`/v1/auth`, `/v1/me`)
 
-For the Telegram bot and back office. These endpoints are disabled if `INTERNAL_API_KEY` is not set.
+Website users sign in **without a password**, with a 6-digit code sent to their email. The first sign-in creates the
+account, with default preferences (jobs).
 
 | Endpoint | Purpose |
 |---|---|
-| `PUT /users/{chat_id}` | Create or update a user on `/start` (default preferences: jobs) |
-| `GET /users/{chat_id}` | User with preferences |
-| `PUT /users/{chat_id}/preferences` | Kinds, fields, provinces, BPS range, age, experience, programme levels, keywords (strictly validated) |
-| `POST /users/{chat_id}/unsubscribe`, `/resubscribe` | `/stop` and back. Unsubscribing skips pending alerts |
-| `GET /users/{chat_id}/matches` | Live listings that suit the user now |
-| `POST /alerts/claim?limit=50` | **Outbox:** hand out pending alerts to this sender. Safe with any number of senders (`SKIP LOCKED`) |
-| `POST /alerts/{id}/sent`, `/failed` | Report delivery. Failures retry up to 3 times, or not at all when `permanent` is true |
-| `GET /alerts?status=` | Recent alerts |
-| `GET /admin/overview` | Active users, listings needing review, alerts by status |
+| `POST /v1/auth/code` `{email}` | Email a sign-in code, valid 10 minutes. The answer is the same whether or not the account exists |
+| `POST /v1/auth/verify` `{email, code}` | Returns `{token, expires_at, user}`. Send the token as `Authorization: Bearer <token>` |
+| `POST /v1/auth/logout` | End this session (other devices stay signed in) |
+| `GET /v1/me`, `PATCH /v1/me` | Profile and switches: `name`, `language`, `alerts_enabled`, `email_alerts`, `push_alerts`. Switching off cancels anything queued |
+| `DELETE /v1/me` | Delete the account and everything tied to it |
+| `PUT /v1/me/preferences` | Kinds, fields, provinces, BPS range, age, experience, programme levels, keywords (strictly validated) |
+| `GET /v1/me/matches` | Open listings that suit the user now, closing soonest first |
+| `GET /v1/me/alerts?limit=&before=&unread_only=` | **Inbox**, newest first, with `unread` count. Keyset pages: pass `next_before` as `before` |
+| `POST /v1/me/alerts/read` `{ids}` or `{all: true}` | Mark as read |
+| `POST /v1/me/push-subscriptions` | Register this browser for Web Push (the JSON of `PushSubscription`). At most 10 devices |
+| `DELETE /v1/me/push-subscriptions` `{endpoint}` | Unregister a browser |
+| `GET /v1/push/public-key` | VAPID key for `PushManager.subscribe({applicationServerKey})` |
+| `POST /v1/email/unsubscribe?token=` | One-click unsubscribe from the signed link in alert emails (RFC 8058) |
+
+Security:
+
+- **Codes** are stored in Redis only as an HMAC (`APP_SECRET`). They are single-use, and burned after 5 wrong tries.
+- **Sending is throttled:** one code per minute and five per hour per address, and 20 per hour per IP.
+- **Sessions** are random 32-byte tokens. Only their SHA-256 is stored (`auth_sessions`). They expire after
+  `SESSION_DAYS` (60).
+- **Push endpoints** must be a real push service (FCM, Mozilla, Apple, Windows), so the notifier never calls an
+  arbitrary or internal URL.
+- **Sign-in is off** (503) while `APP_SECRET` is not set.
+
+## Internal (`/v1/internal`, header `X-API-Key: $INTERNAL_API_KEY`)
+
+For the back office and scripts. These endpoints are disabled if `INTERNAL_API_KEY` is not set.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /alerts?status=` | Recent alerts (pending, sent, skipped) with the matched posts |
+| `GET /admin/overview` | Users, active users, listings needing review, alerts by status, deliveries by channel and status |
 | `GET /admin/review-queue`, `POST /admin/listings/{id}/verify` | Human spot checks (launch checklist) |
 | `POST /admin/scrape?force=false` | Queue an NTS run now (Celery `scrape` queue) |
 
@@ -72,7 +96,8 @@ curl "localhost:8000/v1/listings?kind=job&province=Punjab"
 curl -H "X-API-Key: $INTERNAL_API_KEY" localhost:8000/v1/internal/admin/overview
 ```
 
-Settings come from `.env`: `DATABASE_URL`, `REDIS_URL`, `INTERNAL_API_KEY`, `CORS_ORIGINS` (comma-separated),
+Settings come from `.env`: `DATABASE_URL`, `REDIS_URL`, `INTERNAL_API_KEY`, `APP_SECRET`, `SESSION_DAYS`,
+`VAPID_PUBLIC_KEY`, `CORS_ORIGINS` (comma-separated),
 `API_WORKERS` (uvicorn workers, default 2) and `RATE_LIMIT_PER_MINUTE` (default 120, 0 disables).
 
 ## Tests

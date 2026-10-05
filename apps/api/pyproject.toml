@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "celery[redis]>=5.4",
+    "email-validator>=2.2",
     "fastapi>=0.141.1",
     "redis>=5",
     "sentry-sdk[fastapi]>=2.20",

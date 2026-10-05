@@ -1,7 +1,8 @@
-"""Send tasks to the scraper's Celery workers without importing scraper code.
+"""Send tasks to the Celery workers (scraper, notifier) without importing their code.
 
-The queue definitions must match apps/scrapers/celery_app.py (one direct exchange and
-routing key per queue), otherwise a message could be routed to the wrong queue.
+The queue definitions must match apps/scrapers/celery_app.py and
+apps/notifier/celery_app.py (one direct exchange and routing key per queue),
+otherwise a message could be routed to the wrong queue.
 """
 
 from functools import lru_cache
@@ -11,7 +12,7 @@ from kombu import Exchange, Queue
 
 from app.config import settings
 
-QUEUES = ("scrape", "process", "default")
+QUEUES = ("scrape", "process", "default", "notify")
 
 
 @lru_cache(maxsize=1)

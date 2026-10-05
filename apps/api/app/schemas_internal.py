@@ -1,5 +1,6 @@
-"""Models for the internal API (bot, back office). Inputs are validated strictly:
-anything a client sends ends up in matching rules or user messages."""
+"""Models for the internal API (back office) and the shared preference schema.
+Inputs are validated strictly: anything a client sends ends up in matching rules or
+user messages."""
 
 from datetime import datetime
 from typing import Literal
@@ -12,11 +13,6 @@ KINDS = ("job", "admission", "test")
 FIELDS = ("it", "engineering", "health", "education", "legal", "finance", "security", "clerical", "support", "admin")
 PROVINCES = ("Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan", "Islamabad", "Gilgit-Baltistan", "Azad Kashmir")
 LEVELS = ("PhD", "MPhil", "MS", "Pharm-D", "MBBS/BDS", "BSN", "BS", "Diploma", "Certificate / course", "Test")
-
-
-class UserIn(BaseModel):
-    name: str | None = Field(default=None, max_length=100)
-    language: Literal["en", "ur"] = "en"
 
 
 class PreferenceIn(BaseModel):
@@ -53,40 +49,15 @@ class PreferenceOut(PreferenceIn):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    telegram_chat_id: int
-    name: str | None
-    language: str
-    is_active: bool
-    created_at: datetime
-    preference: PreferenceOut | None
-
-
-class MatchOut(BaseModel):
-    listing: ListingSummary
-    matched_posts: list[str]
-
-
 class AlertOut(BaseModel):
-    """Everything a sender needs to write the message, in one object."""
-
     id: int
+    user_id: int
     alert_type: str
     status: str
-    attempts: int
-    telegram_chat_id: int
-    language: str
     listing: ListingSummary
     matched_posts: list[str]
     created_at: datetime
-
-
-class AlertFailure(BaseModel):
-    error: str = Field(max_length=1000)
-    permanent: bool = False  # e.g. the user blocked the bot: do not retry
+    sent_at: datetime | None
 
 
 class ReviewItem(BaseModel):
@@ -95,9 +66,11 @@ class ReviewItem(BaseModel):
 
 
 class Overview(BaseModel):
+    users: int
     active_users: int
     listings_needing_review: int
     alerts_by_status: dict[str, int]
+    deliveries_by_status: dict[str, int]  # "email:sent": 120, "push:failed": 2, ...
 
 
 class TaskQueued(BaseModel):
