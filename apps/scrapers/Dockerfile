@@ -12,7 +12,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     PYTHONUNBUFFERED=1 \
-    DATA_DIR=/app/data     OMP_THREAD_LIMIT=1 \
+    DATA_DIR=/app/data \
+    OMP_THREAD_LIMIT=1 \
     PATH="/app/apps/scrapers/.venv/bin:$PATH"
 
 # Same relative layout as the repo, so the "../../packages/shared" path source resolves

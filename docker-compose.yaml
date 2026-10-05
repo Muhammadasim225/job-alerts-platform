@@ -98,6 +98,36 @@ services:
       - redis
       - scraper-worker
 
+  # Sends alert emails (digests) and Web Push, and sign-in codes. Queue "notify";
+  # scale with: docker compose up -d --scale notifier=3
+  notifier:
+    build:
+      context: .
+      dockerfile: apps/notifier/Dockerfile
+    image: sarkarialert-notifier:latest
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_app inspect ping -d notifier@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 30s
+      start_period: 30s
+      retries: 3
+
+  # Local only: catches every email the notifier sends (nothing leaves the machine).
+  # Inbox UI: http://localhost:8025. In production, point SMTP_* at a real provider.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: always
+    ports:
+      - "127.0.0.1:8025:8025"
+
   # Celery dashboard: queues, workers, task history, failures. Official image, no code
   # coupling. Bound to localhost only and password-protected (FLOWER_BASIC_AUTH=user:pass).
   flower:
