@@ -26,15 +26,21 @@ by **email and Web Push**, and each match lands in their inbox on the website.
 ```bash
 cp .env.example .env            # fill in the secrets (see comments in the file)
 docker compose build
-docker compose run --rm migrate
-docker compose up -d
+docker compose up -d            # migrations run first (migrate service)
 ```
+
+Always `docker compose up -d` after a rebuild or pull, never `docker compose start`: `start` reuses old containers
+with their old images. Postgres and Redis listen on `127.0.0.1` only; connect DB tools to `127.0.0.1`, not
+`localhost` (on Windows `localhost` tries IPv6 first and waits about 30 s).
+
+Idle footprint: about 0.5 GB RAM for the whole stack. The scraper worker autoscales from 1 to `WORKER_CONCURRENCY`
+processes during the daily run. Containers run as non-root users, and logs rotate (3 x 10 MB per container).
 
 | URL | What |
 |---|---|
 | http://localhost:8000/docs | API docs (try the endpoints) |
 | http://localhost:8025 | Mailpit: every email the system sends, locally |
-| http://localhost:5555 | Flower: Celery workers and tasks (`FLOWER_BASIC_AUTH`) |
+| http://localhost:5555 | Flower: Celery workers and tasks (`FLOWER_BASIC_AUTH`). On demand: `docker compose --profile ops up -d flower` |
 
 ## Tests
 

@@ -1,10 +1,23 @@
+# Local stack. Start / update everything (recreates containers whose image changed):
+#   docker compose up -d --build
+# Use "up", not "start": "start" reuses old containers with their old images.
+# Ops dashboard (Flower) only when needed:  docker compose --profile ops up -d flower
+
+# Every container: rotated logs (max 3 x 10 MB), so logs never fill the disk
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     image: sarkarialert-api:latest
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     ports:
       - "8000:8000"
     env_file:
@@ -13,7 +26,7 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     healthcheck:
@@ -22,15 +35,18 @@ services:
       timeout: 10s
       start_period: 20s
       retries: 3
+
   postgres:
     image: postgres:16-alpine
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    # Localhost only: reachable from this machine (tests, DB tools), not from the network
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -38,20 +54,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
   redis:
     image: redis:7-alpine
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     # AOF persistence: dedup state must survive restarts, or every listing looks new again
     command: redis-server --appendonly yes
+    # Localhost only: Redis has no password, it must never be reachable from the network
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   # One-off: bring the Postgres schema up to date (packages/shared migrations)
   migrate:
     image: sarkarialert-scrapers:latest
     command: python -m shared.migrate
+    logging: *logging
     env_file:
       - .env
     depends_on:
@@ -64,20 +89,25 @@ services:
       context: .
       dockerfile: apps/scrapers/Dockerfile
     image: sarkarialert-scrapers:latest
-    restart: always
-    # scrape (1 at a time via lock) + process (parallel OCR) + default (reminders, housekeeping)
+    restart: unless-stopped
+    logging: *logging
+    # scrape (1 at a time via lock) + process (parallel OCR) + default (reminders, housekeeping).
+    # Autoscale: 1 process while idle (most of the day), up to WORKER_CONCURRENCY during
+    # the daily run, so the worker does not hold 4 idle OCR processes in memory.
     command: >
       sh -c "celery -A celery_app worker -Q scrape,process,default
-      --concurrency=$${WORKER_CONCURRENCY:-4} --hostname=worker@%h --loglevel=INFO"
+      --autoscale=$${WORKER_CONCURRENCY:-4},1 --hostname=worker@%h --loglevel=INFO"
     env_file:
       - .env
     volumes:
       - ./apps/scrapers/data:/app/data
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    # Let a running OCR task finish on shutdown (unfinished ones are redelivered anyway)
+    stop_grace_period: 60s
     healthcheck:
       test: ["CMD-SHELL", "celery -A celery_app inspect ping -d worker@$$HOSTNAME --timeout 10 | grep -q pong"]
       interval: 60s
@@ -88,15 +118,18 @@ services:
   scraper-beat:
     # Same image as scraper-worker (built once by that service)
     image: sarkarialert-scrapers:latest
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     command: celery -A celery_app beat --loglevel=INFO --schedule=/app/data/celerybeat-schedule
     env_file:
       - .env
     volumes:
       - ./apps/scrapers/data:/app/data
     depends_on:
-      - redis
-      - scraper-worker
+      redis:
+        condition: service_healthy
+      scraper-worker:
+        condition: service_started
 
   # Sends alert emails (digests) and Web Push, and sign-in codes. Queue "notify";
   # scale with: docker compose up -d --scale notifier=3
@@ -105,12 +138,13 @@ services:
       context: .
       dockerfile: apps/notifier/Dockerfile
     image: sarkarialert-notifier:latest
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     env_file:
       - .env
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     healthcheck:
@@ -124,15 +158,18 @@ services:
   # Inbox UI: http://localhost:8025. In production, point SMTP_* at a real provider.
   mailpit:
     image: axllent/mailpit:latest
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     ports:
       - "127.0.0.1:8025:8025"
 
-  # Celery dashboard: queues, workers, task history, failures. Official image, no code
-  # coupling. Bound to localhost only and password-protected (FLOWER_BASIC_AUTH=user:pass).
+  # Celery dashboard: queues, workers, task history, failures. Only started on demand
+  # (profile "ops"). Bound to localhost and password-protected (FLOWER_BASIC_AUTH).
   flower:
     image: mher/flower:2.0
-    restart: always
+    profiles: ["ops"]
+    restart: unless-stopped
+    logging: *logging
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       FLOWER_BASIC_AUTH: ${FLOWER_BASIC_AUTH:?set FLOWER_BASIC_AUTH=user:password in .env}
@@ -141,7 +178,8 @@ services:
     ports:
       - "127.0.0.1:5555:5555"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

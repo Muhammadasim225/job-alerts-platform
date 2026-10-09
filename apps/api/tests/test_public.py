@@ -69,3 +69,24 @@ def test_stats_and_filters(client):
 
 def test_health(client):
     assert client.get("/health/live").json() == {"status": "ok"}
+
+
+def test_readiness_reports_each_dependency(client, fake_redis):
+    r = client.get("/health")
+    assert r.status_code == 200 and r.json()["checks"] == {"database": "ok", "redis": "ok"}
+
+    import redis
+
+    class DeadRedis:
+        def ping(self):
+            raise redis.ConnectionError("down")
+
+    from app.auth import get_redis
+    from app.main import app
+
+    app.dependency_overrides[get_redis] = DeadRedis
+    r = client.get("/health")
+    assert r.status_code == 503 and r.json() == {
+        "status": "degraded",
+        "checks": {"database": "ok", "redis": "error: ConnectionError"},
+    }
