@@ -26,7 +26,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY apps/scrapers/ ./
 
+# Least privilege: processes run as "scraper", which owns only the data directory.
+# The entrypoint fixes ownership of the bind-mounted data dir, then drops root.
+RUN useradd --system --uid 10003 scraper \
+    && mkdir -p /app/data \
+    && chown scraper:scraper /app/data \
+    && chmod +x docker-entrypoint.sh
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
 # Default: Celery worker. Beat and migrations run from the same image with other commands.
 # OMP_THREAD_LIMIT=1: one Tesseract = one core; parallelism comes from Celery processes
 # (several OCR jobs at once), not from threads fighting over the same cores.
-CMD ["celery", "-A", "celery_app", "worker", "-Q", "scrape,process,default", "--loglevel=INFO", "--concurrency=4"]
+CMD ["celery", "-A", "celery_app", "worker", "-Q", "scrape,process,default", "--loglevel=INFO", "--autoscale=4,1"]

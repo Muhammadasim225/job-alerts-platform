@@ -29,9 +29,20 @@ def database_url() -> str:
     return normalize_url(url)
 
 
+CONNECT_TIMEOUT = int(os.getenv("DB_CONNECT_TIMEOUT", "5"))
+
+
 @lru_cache(maxsize=4)
 def get_engine(url: str | None = None) -> Engine:
-    return create_engine(normalize_url(url) if url else database_url(), pool_pre_ping=True, future=True)
+    return create_engine(
+        normalize_url(url) if url else database_url(),
+        pool_pre_ping=True,  # a connection dropped by a Postgres restart is replaced, not used
+        pool_recycle=1800,  # long-lived workers never hold a connection for hours
+        # Fail fast while Postgres is down (startup, restart) instead of hanging requests
+        # and health checks on the OS TCP timeout
+        connect_args={"connect_timeout": CONNECT_TIMEOUT},
+        future=True,
+    )
 
 
 def session_factory(url: str | None = None) -> sessionmaker[Session]:
