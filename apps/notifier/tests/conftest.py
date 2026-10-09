@@ -27,7 +27,7 @@ def _url() -> str | None:
         url = next((l.split("=", 1)[1].strip() for l in env.read_text().splitlines() if l.startswith("DATABASE_URL=")), None)
     if not url:
         return None
-    url = re.sub(r"@[^:/]+(:\d+)?/", r"@localhost\1/", normalize_url(url))
+    url = re.sub(r"@[^:/]+(:\d+)?/", r"@127.0.0.1\1/", normalize_url(url))
     return re.sub(r"/(\w+)$", r"/\1_notifytest", url)
 
 

@@ -2,7 +2,7 @@
 container, built with the real migrations. Skipped if Postgres is unreachable.
 
 The URL is TEST_DATABASE_URL, or DATABASE_URL from the repo-root .env with the
-host switched to localhost and the database name suffixed with _test.
+host switched to 127.0.0.1 (IPv4: "localhost" may try IPv6 first and stall) and the database name suffixed with _test.
 """
 
 import os
@@ -25,7 +25,7 @@ def _test_url() -> str | None:
         url = next((l.split("=", 1)[1].strip() for l in env.read_text().splitlines() if l.startswith("DATABASE_URL=")), None)
     if not url:
         return None
-    url = re.sub(r"@[^:/]+(:\d+)?/", r"@localhost\1/", normalize_url(url))
+    url = re.sub(r"@[^:/]+(:\d+)?/", r"@127.0.0.1\1/", normalize_url(url))
     return re.sub(r"/(\w+)$", r"/\1_test", url)
 
 
