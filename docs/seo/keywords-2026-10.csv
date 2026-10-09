@@ -1,0 +1,51 @@
+keyword,intent,volume,cpc_pkr,paid_difficulty,seo_difficulty,group
+nts jobs,I+N,18100,214.69,1,24,nts
+nts jobs 2026,I,1300,0,1,28,nts
+nts jobs advertisement 2026,,140,0,1,5,nts
+nts jobs apply online 2026,T,590,0,1,24,nts
+nts test date 2026,I,1600,0,1,18,nts-lifecycle
+nts result 2026,I,1000,0,1,17,nts-lifecycle
+nts gat schedule 2026,,110,0,1,5,nts-lifecycle
+nts roll number slip,,6600,0,1,6,nts-lifecycle
+govt jobs 2026,I,6600,94.19,1,25,generic
+govt jobs in pakistan 2026,C+I,390,0,1,26,generic
+govt jobs in punjab,N+C,12100,698.10,1,36,province
+govt jobs in sindh,,2400,0,1,5,province
+govt jobs in kpk,,2900,0,1,5,province
+govt jobs in balochistan,,140,0,1,5,province
+govt jobs in islamabad,,4400,0,1,6,city
+govt jobs in lahore,C,6600,205.00,1,20,city
+govt jobs in karachi,,9900,67.87,1,8,city
+govt jobs in rawalpindi,,1600,0,1,5,city
+govt jobs in peshawar,,590,0,1,5,city
+govt jobs in quetta,,70,0,1,5,city
+bps 16 jobs,,20,0,1,13,bps
+bps 14 jobs,,20,0,1,13,bps
+bps 11 jobs,,10,0,1,13,bps
+bps 17 jobs,,50,0,1,13,bps
+jobs for matric pass,N,590,66.49,5,20,qualification
+jobs for intermediate pass,,30,0,10,9,qualification
+jobs for bachelor degree,,50,52.63,14,10,qualification
+jobs for fresh graduates in pakistan,,140,155.13,12,9,qualification
+computer operator jobs,I,1000,811.68,2,18,post
+data entry operator govt jobs,,20,0,1,5,post
+junior clerk jobs 2026,,20,0,1,5,post
+teaching jobs 2026,,70,554.05,2,14,field
+lecturer jobs 2026,,140,0,1,13,field
+nurse jobs 2026 pakistan,,0,0,1,4,field
+police jobs 2026,I,2400,0,1,29,field
+fpsc jobs 2026,C+I,2400,0,1,12,commission
+ppsc jobs 2026,I,4400,0,1,11,commission
+spsc jobs 2026,I,390,0,1,12,commission
+kppsc jobs 2026,,260,0,1,13,commission
+last date govt jobs,,10,0,1,5,freshness
+jobs closing soon pakistan,,0,0,1,4,freshness
+latest govt jobs today,N+I,390,0,1,24,freshness
+job alert pakistan,I,880,110.81,1,29,alerts
+govt job alert,,90,0,1,13,alerts
+university admission 2026,,90,198.07,26,21,admissions
+admission 2026 last date,,0,0,1,4,admissions
+ms mphil admission 2026,,30,34.63,7,8,admissions
+phd admission 2026,,10,333.82,35,24,admissions
+bsn admission 2026,I,880,83.11,7,26,admissions
+nursing admission 2026,I,590,132.97,7,15,admissions

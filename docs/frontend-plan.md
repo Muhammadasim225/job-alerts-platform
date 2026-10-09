@@ -34,6 +34,27 @@ Status: plan, 2026-10-05. Based on:
 | Admissions | admission 2026 last date, university admissions open in islamabad | `/admissions`, `/admissions/level/{level}` |
 | Commissions | ppsc jobs 2026, fpsc jobs advertisement 2026 | **Only when those sources are scraped.** No empty pages |
 
+## 2a. Measured demand (keyword tool, Pakistan, Oct 2026)
+
+Volumes are monthly estimates, and SD is SEO difficulty on a 0-100 scale. Full data is in
+[docs/seo/keywords-2026-10.csv](seo/keywords-2026-10.csv).
+
+| Priority | Page type | Evidence | Needs |
+|---|---|---|---|
+| 1 | **City and province hubs** | Karachi 9.9K (SD 8), Islamabad 4.4K (SD 6), KPK 2.9K (SD 5), Sindh 2.4K (SD 5), Rawalpindi 1.6K (SD 5), Lahore 6.6K (SD 20), Punjab 12.1K (SD 36). The biggest group at ~40K/month, and mostly easy | Location data, which we have |
+| 2 | **NTS hub** `/jobs/test/nts` | "nts jobs" 18.1K (SD 24), "nts jobs 2026" 1.3K, "apply online" 590 | Data we have |
+| 3 | **NTS lifecycle**: roll number slip, test date, result | "nts roll number slip" **6.6K at SD 6**, test date 1.6K, result 1K, GAT schedule 110 | **New scraping**: NTS slip, result and test-date notices per project. We link to the official download; we never host slips |
+| 4 | **PPSC / FPSC sources** | PPSC 4.4K (SD 11), FPSC 2.4K (SD 12), SPSC 390, KPPSC 260 | New scrapers. PPSC first |
+| 5 | Field and post hubs | police 2.4K (SD 29), computer operator 1K (SD 18) | Field data, which we have; post pages in phase 2 |
+| 6 | Admissions: nursing and BSN | BSN 880 (SD 26), nursing 590 (SD 15). We already hold CIHS BSN data | Data we have |
+| 7 | Home / alert landing | "job alert pakistan" 880 (SD 29), "latest govt jobs today" 390 | n/a |
+| Low | Qualification hubs | matric 590 (SD 20), the rest under 150 | Education level (§9) |
+| **Skip as indexed pages** | **BPS hubs** | bps 11/14/16/17 total about **100/month** | BPS stays a filter, `noindex` |
+| UX only | "closing soon", "last date" | 0-10 searches | Build them for returning users, not for SEO |
+
+CPC is high for "govt jobs in punjab" (Rs 698) and "computer operator jobs" (Rs 812). These keywords have commercial
+value, which matters for later monetisation.
+
 ## 3. SEO rules (hard requirements)
 
 1. **Server-rendered content.** Title, H1, facts, posts table and links are all in the first HTML (Server Components,
@@ -90,7 +111,7 @@ Status: plan, 2026-10-05. Based on:
 | `/jobs/{slug}-{id}/{post-slug}` | Single post page, with JobPosting (phase 2) | yes, if complete | vacancy |
 | `/jobs/test/{nts}` | Jobs by testing body | ≥3 live | filter |
 | `/jobs/in/{province}`, `/jobs/city/{city}` | Location hubs | ≥3 live | filter |
-| `/jobs/bps/{n}` | Grade hubs (BPS 1–22) | ≥3 live | `/v1/vacancies` |
+| `/jobs/bps/{n}` | Grade filter only; measured demand is about 100/month in total (§2a) | **noindex** | `/v1/vacancies` |
 | `/jobs/field/{it\|health\|engineering…}` | Field hubs | ≥3 live | filter |
 | `/jobs/org/{org}` | Organization hubs | ≥3 live or archive | needs org slug (§9) |
 | `/jobs/qualification/{matric…}` | Qualification hubs | ≥3 live | needs education level (§9) |
@@ -261,6 +282,9 @@ apps/web/
 7. **OCR quality gate:** keep `needs_review` listings out of the index until verified, and clean common OCR noise in
    qualification text.
 8. **Deadline as a datetime** in PKT (`+05:00`), plus deadline history for "extended" banners.
+9. **NTS lifecycle scraping:** roll number slip, test date and result notices per project. These are
+   added to the listing page and to `/nts/roll-number-slip`, `/nts/results` and `/nts/test-dates` hubs.
+   "nts roll number slip" alone is about 6.6K searches/month at SD 6 (§2a).
 
 ## 10. Build order (chunks; each is merged after CI is green)
 
