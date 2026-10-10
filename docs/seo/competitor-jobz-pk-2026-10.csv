@@ -1,0 +1,36 @@
+keyword,intent,volume,cpc_pkr,paid_difficulty,seo_difficulty,status,cluster
+job punjab public service commission,N,110000,0,1,11,shown,PPSC
+job in ppsc,N+I,110000,163.45,1,11,shown,PPSC
+punjab service commission jobs,N+I,110000,0,1,17,shown,PPSC
+experts jobs 24,I+N,74000,207.78,5,13,shown,Competitor brand
+jobs for fia,N+I,60500,160.68,1,18,shown,FIA
+job for fia,N+I,60500,160.68,1,18,shown,FIA
+jobs of fia,N+I,60500,160.68,1,15,shown,FIA
+combined military hospital rawalpindi cmh,N+I,60500,13.85,5,22,shown,Noise (hospital)
+free job pk,I+N,49500,113.58,2,19,shown,Competitor brand
+karachi pakistan jobs,I+C,49500,60.95,9,27,shown,Karachi (all jobs)
+karachi vacancies,I,49500,49.87,11,31,shown,Karachi (all jobs)
+job opportunity in karachi,I+C,49500,60.95,9,28,shown,Karachi (all jobs)
+job vacancies in karachi,I+C,49500,58.18,12,28,shown,Karachi (all jobs)
+job in karachi pakistan,I+C,49500,58.18,12,24,shown,Karachi (all jobs)
+vacancy karachi,I,49500,60.95,9,29,shown,Karachi (all jobs)
+jobs in karachi pk,I+C,49500,58.18,12,37,shown,Karachi (all jobs)
+jobs for ministry of defence,N,49500,0,1,13,shown,Ministry of Defence
+jobs of karachi,I,49500,60.95,9,31,shown,Karachi (all jobs)
+job in ministry of defence,N+I,49500,0,1,19,shown,Ministry of Defence
+pakistan jobs in karachi,I+C,49500,58.18,12,31,shown,Karachi (all jobs)
+nadra office jobs,,,,,,locked,NADRA
+jobs nadra,,,,,,locked,NADRA
+bank job pk,,,,,,locked,Banks
+jobs of fpsc,,,,,,locked,FPSC
+pakistan jobs in lahore,,,,,,locked,Lahore (all jobs)
+prize bond list check online,,,,,,locked,Noise (prize bond)
+pakistan bank jobs,,,,,,locked,Banks
+bank jobs in pak,,,,,,locked,Banks
+banking jobs in pak,,,,,,locked,Banks
+jobs in lahore jobs pk,,,,,,locked,Lahore (all jobs)
+nadra jobs pk,,,,,,locked,NADRA
+gov jobs,,,,,,locked,Generic govt
+career nadra,,,,,,locked,NADRA
+islamabad vacancy,,,,,,locked,Islamabad (all jobs)
+isb job,,,,,,locked,Islamabad (all jobs)
