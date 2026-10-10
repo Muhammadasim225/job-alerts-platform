@@ -41,7 +41,7 @@ Corrections and data the design assumes (✱ = needs backend work in W0/W1):
 | 8 | Listing / sign-in sheet | "Reminder lagayein" | ✱ saved listings + reminders for saved listings |
 | 9 | Settings | Data download + delete | ✱ `GET /v1/me/export` (delete exists) |
 | 10 | Inbox | 4 alert types incl. roll slip/result | At launch show only new / reminder / extended; lifecycle comes with lifecycle scraping (W8) |
-| 11 | About | Founder name; "PPSC 762,392 applicants (2024)" | **Owner to confirm** name and keep the source link for the stat, or remove it |
+| 11 | About | Founder name; "PPSC 762,392 applicants (2024)" | Founder: **Muhammad Asim** (E-E-A-T). PPSC stat stays **only** with a working link to its real source (APP / PPSC Annual Report 2024); if the link cannot be verified at build time the card is removed. No number is ever shown without a source |
 | 12 | Home/Hub | Counts per hub (Karachi 23 …) | ✱ hub counts endpoint |
 | 13 | Empty hub | "Pichli job: … band hui 21 Sep" | ✱ last closed listing per hub (same endpoint) |
 
@@ -94,16 +94,21 @@ Contabo VPS: 4 vCPU (Broadwell 2.0 GHz), 7.8 GiB RAM (6.8 available), **no swap*
    they never clash with :5432/:6379 and are unreachable from outside. Only `web` and `api` publish ports, on unused
    loopback ports (`127.0.0.1:3100` web, `127.0.0.1:8100` api).
 2. **No second Caddy.** Ports 80/443 are taken. We add a `lastbell.pk` site block to the **existing** Caddy that proxies
-   to 127.0.0.1:3100 and :8100. This touches the other project's Caddyfile, so it is done only with the owner's
-   go-ahead at deploy time (W7).
+   to 127.0.0.1:3100 and :8100 (approved). Before touching anything: a Contabo snapshot (or full backup) of the server
+   and a copy of linkduk's Caddyfile; `caddy validate` before `caddy reload`.
 3. **Our own Postgres container and volume** (not the shared `postgres-db`): isolation, separate backups, independent
    upgrades. RAM cost ≈ 200–400 MB, which fits.
-4. **Add a 4 GB swap file** before deploy. Without swap, an OCR spike (Tesseract/pdf rendering in the scraper worker)
-   can OOM-kill containers of both projects.
+4. **Add a 4 GB swap file** before deploy (approved). `swapon` is live: no reboot needed for it. Without swap, an OCR
+   spike (Tesseract/pdf rendering in the scraper worker) can OOM-kill containers of both projects.
 5. **Memory budget** (limits in compose): postgres 768 MB, redis 128 MB, api 384 MB, web 512 MB, scraper worker 1.5 GB
    (concurrency 2), beat 128 MB, notifier 256 MB, backup 128 MB → ≈ 3.8 GB, leaving room for linkduk.
 6. **EU server, Pakistani users:** ~150 ms round trip without a CDN, so **Cloudflare is required**, not optional.
-7. Apply the pending OS updates and reboot in a quiet hour (affects linkduk too; owner's call).
+7. **Reboot only when a kernel update is pending**, and only between 02:00 and 05:00 PKT. Every container (ours and
+   linkduk's) runs with `restart: unless-stopped`; after any reboot both lastbell.pk and linkduk are checked.
+8. **The Next.js image is built in CI** (GitHub Actions → registry), never on the server: a `next build` would eat the
+   RAM linkduk needs.
+9. **Cloudflare Free in front of the domain:** proxied DNS, cache rules for static assets and ISR pages, SSL mode
+   **Full (strict)** with a Cloudflare origin certificate in Caddy.
 
 ### 4.1 Events without an event bus (the "event streaming" we actually need)
 
@@ -190,7 +195,7 @@ URL params hold filters.
 | Server | Contabo VPS | **already bought** | One box runs everything |
 | Domain | lastbell.pk (+ lastbell.com.pk) | **≈ Rs 2,100/yr each** (only unavoidable cost) | After the name checks |
 | CDN, DNS, TLS, WAF | Cloudflare Free | 0 | Proxy on; origin cert for Caddy |
-| Email (alerts + login codes) | **Brevo Free** (300 emails/day, SMTP: works with our current code) → **Amazon SES** when daily volume passes ~250 (≈ $0.10 per 1,000) | 0 → a few $ | One digest per user per day keeps volume low. Set SPF, DKIM, DMARC on the domain from day 1 |
+| Email (alerts + login codes) | **Pool of free SMTP tiers** (`SMTP_PROVIDERS`): Brevo 300/day, Mailjet 200/day (6,000/mo), SMTP2GO 200/day (1,000/mo), Mailtrap 150/day (4,000/mo), Resend 100/day (3,000/mo) ≈ 950/day at no cost → **Amazon SES** (≈ $0.10 per 1,000) when that is not enough | 0 → a few $ | One digest per user per day keeps volume low. SPF, DKIM, DMARC on the domain from day 1, DKIM verified at every provider in the pool. Free-tier limits change: re-check each provider's pricing page before relying on it |
 | Push | Web Push (VAPID) | 0 | Already built |
 | Errors | Sentry Developer (free) | 0 | Already wired |
 | Scraper heartbeat | Healthchecks.io (free, 20 checks) | 0 | Ping after each scrape, dispatch and backup |
@@ -207,9 +212,11 @@ URL params hold filters.
 | Chunk | Branch | Contents | Done when |
 |---|---|---|---|
 | **W0a** | `feature/data-model-v2` | Migration: `organizations` (slug, name, short_name, aliases[], kind, official_url) + `listings.organization_id`; `listings.slug`, `apply_url`, `last_date_at`, `indexable`; `vacancies.gender`, `education_levels[]`; `deadline_changes`; `saved_listings`; `listing_events`; `hub_slugs` registry seeded (cities incl. `hyderabad-sindh`, provinces, regions, fields, topics). Backfill from existing data | migrations + tests green |
-| **W0b** | `feature/normalization` | Org normalization (alias + pg_trgm match, unknown → review queue), slug builder, education/gender parsers, deadline-change detection writing `deadline_changes` + `listing_events` in the same transaction | NTS data fully mapped, tests |
+| **W0b** ✅ | `feature/deadline-events` | Deadline change, `deadline_changes` row and outbox event in one transaction; outbox worker (`FOR UPDATE SKIP LOCKED`, savepoint per event, backoff 1 min → 6 h, then parked); one event → alerts/reminder shift + Next.js revalidate webhook (listing, org, hub tags) + public cache version bump; reminders 2 days before the last date in PKT, for alerted users and saved listings, re-keyed on extension (+ "deadline_extended" alert); Healthchecks.io pings after every scrape, outbox and reminder run | merged 2026-10-10 |
+| ✅ | `feature/deapi-key-pool` | `DEAPI_API_KEYS` (comma-separated): first key with room, next on daily quota / refusal; per-key daily cap (gates new jobs only) and per-minute pacing; counters in Redis by key hash; one Sentry error/day when all keys are spent. deAPI stays a fallback for image adverts and scanned pages only | merged 2026-10-10 |
+| ✅ | `feature/email-pool` | Free SMTP provider pool with per-provider daily/monthly caps and failover, daily send counts, alerts at 80 % and when full (log + Sentry), full pool defers deliveries to the next reset | merged 2026-10-10 |
 | **W0c** | `feature/public-api-v2` | `GET /v1/listings/by-slug/{slug}`, `GET /v1/hubs/{kind}/{slug}` (listings + counts + nearby + last closed), `GET /v1/hubs` (all counts, for nav and sitemap), `GET /v1/orgs/{slug}`, `GET /v1/match-count`, `GET /v1/sitemap/{type}`, `/v1/stats.checked_today`, `POST /v1/reports`; `indexable` filter; Redis cache for counts | OpenAPI updated, tests |
-| **W0d** | `feature/saved-and-events` | `PUT/DELETE/GET /v1/me/saved`, reminders for saved listings, "extended" alerts, event consumer task (revalidate webhook + alert queue + cache bust), `GET /v1/me/export` | end-to-end test: deadline change → event → alert + revalidate call |
+| **W0d** | `feature/saved-and-export` | `PUT/DELETE/GET /v1/me/saved` (reminders, extended alerts and the event consumer already landed in W0b), `GET /v1/me/export`, `POST /v1/reports` | API tests |
 | W1 | `feature/web-scaffold` | Next.js 16 app, tokens, layout/header/footer/menu, SEO infra, typed client, Dockerfile, compose service, CI (lint, typecheck, build, Lighthouse budget) | `/` renders from API |
 | W2 | `feature/web-listing` | Listing page all states, OG image, eligibility checker, redirects | matches boards 04–04e |
 | W3 | `feature/web-home-lists` | Home, `/jobs`, closing-soon, new-today | boards 02 |
@@ -247,9 +254,15 @@ Answered on 2026-10-10:
 - **Server:** shared Contabo VPS, see §4.0.
 - **Order:** backend W0 first, then frontend (the default; pages need slugs and hubs).
 
+Answered later on 2026-10-10:
+
+- **About page:** founder "Muhammad Asim"; the PPSC stat only with its verified source link, otherwise the card goes.
+- **Email:** start free with the provider pool (§6); daily send counts with log + Sentry alerts.
+- **Deploy (W7):** Caddy block, swap and Cloudflare approved under the conditions in §4.0.
+- **Security:** gitleaks in pre-commit and CI; no command prints `.env` or secrets; secrets masked in logs and
+  Sentry. The owner rotates the deAPI key.
+- **Database:** LastBell uses its own Postgres container (locally on 127.0.0.1:55432), never another project's.
+
 Still open:
 
-1. **About page:** confirm the founder name shown, and whether to keep the PPSC applicants stat (with its source link).
-2. **Email:** OK to start with Brevo Free (300/day) and move to SES later?
-3. **Deploy (W7):** OK to add a `lastbell.pk` block to the existing linkduk Caddy, add a 4 GB swap file, and reboot for
-   the pending updates?
+1. **Design handoff:** `docs/design/DESIGN-HANDOFF.md` is not in the repo yet; the frontend (W1+) is built from it.
