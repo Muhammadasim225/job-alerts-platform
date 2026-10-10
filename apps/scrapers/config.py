@@ -44,8 +44,12 @@ HOUSEKEEPING_HOUR = int(os.getenv("HOUSEKEEPING_HOUR", "3"))
 RETENTION_DAYS = int(os.getenv("RUN_LOG_RETENTION_DAYS", "30"))
 
 # Optional vision-language OCR (deAPI, Nanonets-OCR-s) for stylized image adverts and
-# scanned pages. Off unless an API key is set; Tesseract is used otherwise / on failure.
-DEAPI_API_KEY = os.getenv("DEAPI_API_KEY")
+# scanned pages. Off unless a key is set; Tesseract is used otherwise / on failure.
+# DEAPI_API_KEYS: several accounts' keys, comma-separated, used in order (the next one
+# when a key's day is spent). The older single DEAPI_API_KEY still works.
+DEAPI_API_KEYS = [k.strip() for k in (os.getenv("DEAPI_API_KEYS") or os.getenv("DEAPI_API_KEY") or "").split(",") if k.strip()]
+DEAPI_KEY_DAILY_LIMIT = int(os.getenv("DEAPI_KEY_DAILY_LIMIT", "45"))  # requests/key/UTC day (free tier: 50)
+DEAPI_KEY_PER_MINUTE = int(os.getenv("DEAPI_KEY_PER_MINUTE", "5"))  # requests/key/minute (free tier: 5)
 DEAPI_BASE_URL = os.getenv("DEAPI_BASE_URL", "https://api.deapi.ai")
 DEAPI_OCR_MODEL = os.getenv("DEAPI_OCR_MODEL", "Nanonets_Ocr_S_F16")
 VLM_MAX_CALLS_PER_DAY = int(os.getenv("VLM_MAX_CALLS_PER_DAY", "200"))  # one call per strip

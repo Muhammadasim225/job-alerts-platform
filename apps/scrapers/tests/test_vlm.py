@@ -4,7 +4,7 @@ import pytest
 from PIL import Image
 
 import config
-from nts import vlm
+from nts import deapi_keys, vlm
 from nts.tables import markup_to_text, rows_from_tables, tables_from_markup
 
 WCLA_VLM_OUTPUT = """PUNJAB WALLED CITIES AND HERITAGE AREAS AUTHORITY
@@ -48,7 +48,7 @@ def configured(monkeypatch, tmp_path):
 
     # Never touch the real local Redis: its pause flag / budget would leak into tests
     monkeypatch.setattr(dedup, "get_redis", lambda r=fakeredis.FakeRedis(decode_responses=True): r)
-    monkeypatch.setattr(config, "DEAPI_API_KEY", "test-key")
+    monkeypatch.setattr(config, "DEAPI_API_KEYS", ["test-key"])
     monkeypatch.setattr(config, "VLM_CACHE_DIR", tmp_path / "vlm")
     monkeypatch.setattr(vlm, "_take_budget", lambda: True)
     monkeypatch.setattr(vlm, "POLL_SECONDS", 0)
@@ -70,7 +70,7 @@ def test_job_error_raises(configured):
 
 
 def test_unconfigured_is_off(monkeypatch):
-    monkeypatch.setattr(config, "DEAPI_API_KEY", None)
+    monkeypatch.setattr(config, "DEAPI_API_KEYS", [])
     assert not vlm.vlm_available()
 
 
@@ -139,10 +139,10 @@ def test_too_large_strip_is_halved_and_retried(configured, monkeypatch):
     assert out.count("part") == 2
 
 
-def test_429_is_waited_out(monkeypatch):
+def test_429_is_waited_out(configured, monkeypatch):
     monkeypatch.setattr(vlm.time, "sleep", lambda s: None)
     responses = [Resp({}, 429), Resp({}, 429), Resp({"ok": True}, 200)]
-    resp = vlm._rate_limited(lambda: responses.pop(0))
+    resp = vlm._rate_limited(lambda k: responses.pop(0), deapi_keys.keys()[0])
     assert resp.status_code == 200
 
 
@@ -192,8 +192,8 @@ def test_daily_quota_pauses_vlm_without_waiting(configured, monkeypatch):
             "X-RateLimit-Daily-Limit": "50",
         },
     )
-    with pytest.raises(vlm.QuotaExhausted):
-        vlm._rate_limited(lambda: daily)
+    with pytest.raises(deapi_keys.KeyExhausted):
+        vlm._rate_limited(lambda k: daily, deapi_keys.keys()[0])
     assert slept == []  # no waiting on a daily limit
     assert vlm.paused_until() == pytest.approx(reset)
     # Paused: new images are refused at once, before any HTTP call
