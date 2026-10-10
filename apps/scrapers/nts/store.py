@@ -23,21 +23,30 @@ def store_record(record: dict) -> dict | None:
 
     with session_scope(config.DATABASE_URL) as session:
         res = upsert_listing(session, record)
-        return {"listing_db_id": res.listing.id, "is_new": res.is_new, "changed_fields": res.changed_fields}
+        return {
+            "listing_db_id": res.listing.id,
+            "is_new": res.is_new,
+            "changed_fields": res.changed_fields,
+            "events": res.events,
+        }
 
 
-def queue_alerts(stored: dict | None, record: dict) -> int:
-    """Queue "new" alerts for a listing that just appeared or re-opened.
-    Edits to a known open listing (OCR re-runs, review flags) never re-alert."""
-    if not stored or record.get("status") != "open":
-        return 0
-    if not (stored["is_new"] or "status" in stored["changed_fields"]):
-        return 0
-    from shared.db import session_scope
-    from shared.matching import queue_alerts_for_listing
+def process_events() -> dict:
+    """Run the listing_events outbox once: alerts, website revalidation, cache bump.
+    Alerts for a new or re-opened listing are queued here (from its "created" /
+    "reopened" event), never directly by the scraper, so there is one path."""
+    if not db_enabled():
+        return {"processed": 0, "failed": 0, "batch": 0}
+    from nts.dedup import get_redis
+    from shared.db import session_factory
+    from shared.events import Handlers, cache_bumper, revalidator
+    from shared.events import process_events as run
 
-    with session_scope(config.DATABASE_URL) as session:
-        return queue_alerts_for_listing(session, stored["listing_db_id"])
+    handlers = Handlers(
+        revalidate=revalidator(config.WEB_REVALIDATE_URL, config.WEB_REVALIDATE_SECRET),
+        bump_cache=cache_bumper(get_redis()),
+    )
+    return run(session_factory(config.DATABASE_URL), handlers)
 
 
 def queue_reminders(days_before: int = 2) -> int:

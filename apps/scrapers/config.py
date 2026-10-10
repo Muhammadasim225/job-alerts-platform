@@ -52,3 +52,11 @@ VLM_MAX_CALLS_PER_DAY = int(os.getenv("VLM_MAX_CALLS_PER_DAY", "200"))  # one ca
 VLM_CACHE_DIR = DATA_DIR / "vlm_cache"
 
 SENTRY_DSN = os.getenv("SENTRY_DSN")
+
+# Website revalidation webhook (Next.js POST /api/revalidate); empty = skipped (dev)
+WEB_REVALIDATE_URL = os.getenv("WEB_REVALIDATE_URL", "")
+WEB_REVALIDATE_SECRET = os.getenv("WEB_REVALIDATE_SECRET", "")
+# Healthchecks.io ping URLs, one per scheduled job; empty = no ping
+HEALTHCHECK_URL_SCRAPE = os.getenv("HEALTHCHECK_URL_SCRAPE", "")
+HEALTHCHECK_URL_OUTBOX = os.getenv("HEALTHCHECK_URL_OUTBOX", "")
+HEALTHCHECK_URL_REMINDERS = os.getenv("HEALTHCHECK_URL_REMINDERS", "")

@@ -12,18 +12,29 @@ Rules (an empty preference list / None means "any"):
   programme level in preference.program_levels, keyword in name/subjects, age limits
 
 Unknown values on a post never exclude it: missing an alert is worse than an extra one.
-Alerts are inserted with ON CONFLICT DO NOTHING on (user, listing, type), so running
-the matcher again can never queue the same alert twice.
+Alerts are inserted with ON CONFLICT DO NOTHING on (user, listing, type, deadline), so
+running the matcher again can never queue the same alert twice. Reminders and
+extension alerts carry the deadline they are about, so an extended last date gets its
+own reminder. Days are counted in Pakistan time (PKT, +05:00) whatever the server's
+clock zone.
 """
 
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, selectinload
 
-from shared.models import Alert, Listing, Preference, Program, User, Vacancy
+from shared.models import Alert, Listing, Preference, Program, SavedListing, User, Vacancy
+
+PKT = ZoneInfo("Asia/Karachi")
+UNIQUE_ALERT = "uq_alert_user_listing_type_deadline"
+
+
+def today_pkt() -> date:
+    return datetime.now(PKT).date()
 
 
 @dataclass
@@ -49,7 +60,7 @@ def _age_ok(age: int | None, age_min: int | None, age_max: int | None) -> bool:
 
 
 def listing_is_live(listing: Listing, today: date | None = None) -> bool:
-    today = today or date.today()
+    today = today or today_pkt()
     return listing.status == "open" and not (listing.last_date and listing.last_date < today)
 
 
@@ -144,7 +155,7 @@ def queue_alerts_for_listing(session: Session, listing_id: int, alert_type: str 
                 matched_program_ids=m.program_ids,
                 status="pending",
             )
-            .on_conflict_do_nothing(constraint="uq_alert_user_listing_type")
+            .on_conflict_do_nothing(constraint=UNIQUE_ALERT)
             .returning(Alert.id)
         )
         queued += len(result.all())  # rows actually inserted (not the conflicts)
@@ -156,7 +167,7 @@ def matches_for_user(session: Session, user: User, today: date | None = None) ->
     """All live listings that suit a user (the "jobs for me" page)."""
     if user.preference is None:
         return []
-    today = today or date.today()
+    today = today or today_pkt()
     listings = session.scalars(
         select(Listing)
         .where(Listing.status == "open", (Listing.last_date.is_(None)) | (Listing.last_date >= today))
@@ -166,38 +177,87 @@ def matches_for_user(session: Session, user: User, today: date | None = None) ->
     return [m for l in listings if (m := match_listing(l, user.preference, today))]
 
 
+def _insert_alert(session: Session, **values) -> int:
+    result = session.execute(
+        insert(Alert).values(status="pending", **values).on_conflict_do_nothing(constraint=UNIQUE_ALERT).returning(Alert.id)
+    )
+    return len(result.all())
+
+
 def queue_deadline_reminders(session: Session, days_before: int = 2, today: date | None = None) -> int:
-    """Second alert N days before the last date, for users who got the first one
-    (the "missed deadline" pain point). Idempotent like every other alert."""
-    today = today or date.today()
-    target = today + timedelta(days=days_before)
-    rows = session.execute(
-        select(Alert.user_id, Alert.listing_id, Alert.matched_vacancy_ids, Alert.matched_program_ids)
+    """Reminders for listings whose last date is at most `days_before` days away (PKT),
+    for users who were alerted about the listing or saved it with a reminder.
+
+    One reminder per user, listing and last date: re-running is harmless, a missed daily
+    run is caught up by the next one, and an extended last date gets a fresh reminder
+    when the new date comes close."""
+    today = today or today_pkt()
+    window = (Listing.status == "open", Listing.last_date >= today, Listing.last_date <= today + timedelta(days=days_before))
+
+    alerted = session.execute(
+        select(Alert.user_id, Listing.id, Listing.last_date, Alert.matched_vacancy_ids, Alert.matched_program_ids)
         .join(Listing, Listing.id == Alert.listing_id)
         .join(User, User.id == Alert.user_id)
-        .where(
-            Alert.alert_type == "new",
-            Alert.status == "sent",
-            Listing.status == "open",
-            Listing.last_date == target,
-            User.is_active.is_(True),
-        )
+        .where(Alert.alert_type == "new", Alert.status == "sent", User.is_active.is_(True), *window)
     ).all()
+    saved = session.execute(
+        select(SavedListing.user_id, Listing.id, Listing.last_date)
+        .join(Listing, Listing.id == SavedListing.listing_id)
+        .join(User, User.id == SavedListing.user_id)
+        .where(SavedListing.remind.is_(True), User.is_active.is_(True), *window)
+    ).all()
+
     queued = 0
-    for user_id, listing_id, vacancy_ids, program_ids in rows:
-        result = session.execute(
-            insert(Alert)
-            .values(
-                user_id=user_id,
-                listing_id=listing_id,
-                alert_type="deadline_reminder",
-                matched_vacancy_ids=vacancy_ids,
-                matched_program_ids=program_ids,
-                status="pending",
-            )
-            .on_conflict_do_nothing(constraint="uq_alert_user_listing_type")
-            .returning(Alert.id)
+    for user_id, listing_id, last_date, vacancy_ids, program_ids in alerted:
+        queued += _insert_alert(
+            session,
+            user_id=user_id,
+            listing_id=listing_id,
+            alert_type="deadline_reminder",
+            deadline=last_date,
+            matched_vacancy_ids=vacancy_ids,
+            matched_program_ids=program_ids,
         )
-        queued += len(result.all())  # rows actually inserted (not the conflicts)
+    for user_id, listing_id, last_date in saved:
+        queued += _insert_alert(
+            session, user_id=user_id, listing_id=listing_id, alert_type="deadline_reminder", deadline=last_date
+        )
+    session.flush()
+    return queued
+
+
+def queue_deadline_change_alerts(session: Session, listing_id: int, old: date | None, new: date | None) -> int:
+    """A listing's last date changed. Reminders not yet sent for another date are
+    dropped (the reminder job queues the right one when the new date comes close);
+    on an extension, everyone who was alerted about the listing or saved it gets a
+    'deadline_extended' alert. Idempotent per new date."""
+    session.execute(
+        delete(Alert).where(
+            Alert.listing_id == listing_id,
+            Alert.alert_type == "deadline_reminder",
+            Alert.status == "pending",
+            Alert.deadline.is_distinct_from(new),
+        )
+    )
+    if not (old and new and new > old):
+        session.flush()
+        return 0
+    recipients = set(
+        session.scalars(
+            select(Alert.user_id)
+            .join(User, User.id == Alert.user_id)
+            .where(Alert.listing_id == listing_id, Alert.alert_type == "new", User.is_active.is_(True))
+        )
+    ) | set(
+        session.scalars(
+            select(SavedListing.user_id)
+            .join(User, User.id == SavedListing.user_id)
+            .where(SavedListing.listing_id == listing_id, User.is_active.is_(True))
+        )
+    )
+    queued = sum(
+        _insert_alert(session, user_id=uid, listing_id=listing_id, alert_type="deadline_extended", deadline=new)
+        for uid in sorted(recipients)
+    )
     session.flush()
     return queued

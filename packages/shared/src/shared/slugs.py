@@ -12,6 +12,7 @@ from datetime import date
 
 _MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 MAX_SLUG = 80
+_DANGLING = {"of", "and", "the", "for", "in", "at", "on", "to", "a", "an", "with"}
 
 
 def slugify(text: str | None, max_len: int = MAX_SLUG) -> str:
@@ -22,6 +23,9 @@ def slugify(text: str | None, max_len: int = MAX_SLUG) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower().replace("&", " and ")).strip("-")
     if len(slug) > max_len:
         slug = slug[:max_len].rsplit("-", 1)[0]
+        # never end on a dangling word: "...-government-of" -> "...-government"
+        while (head := slug.rsplit("-", 1))[-1] in _DANGLING and len(head) == 2:
+            slug = head[0]
     return slug
 
 

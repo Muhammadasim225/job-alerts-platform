@@ -5,6 +5,7 @@
                              listing (download, parse, store, queue alerts)
   09:00  deadline-reminders  reminders for listings closing in N days
   03:30  notify-housekeeping expired login sessions, old deliveries (notifier)
+  every 1 min  listing-events   outbox: alerts, website revalidation, cache bump
   every 2 min  notify-dispatch  batch settled alerts into email/push deliveries and
                                 enqueue due ones (notifier, queue "notify")
 
@@ -36,6 +37,11 @@ BEAT_SCHEDULE = {
         "schedule": crontab(minute=0, hour=config.REMINDER_HOUR),
         "kwargs": {"days_before": config.REMINDER_DAYS_BEFORE},
         "options": {"expires": 12 * HOUR},
+    },
+    "listing-events": {
+        "task": "tasks.process_listing_events",
+        "schedule": timedelta(minutes=1),
+        "options": {"expires": 55},
     },
     "notify-dispatch": {
         "task": "notify.dispatch",

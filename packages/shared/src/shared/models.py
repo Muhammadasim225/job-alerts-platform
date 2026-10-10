@@ -259,14 +259,25 @@ class Alert(Base):
 
     __tablename__ = "alerts"
     __table_args__ = (
-        UniqueConstraint("user_id", "listing_id", "alert_type", name="uq_alert_user_listing_type"),
+        # One alert per user, listing, type and deadline. The deadline is only set for
+        # reminder / extension alerts, so a reminder for the new last date can go out
+        # after an extension; NULLS NOT DISTINCT keeps "new" alerts (deadline NULL) unique.
+        UniqueConstraint(
+            "user_id",
+            "listing_id",
+            "alert_type",
+            "deadline",
+            name="uq_alert_user_listing_type_deadline",
+            postgresql_nulls_not_distinct=True,
+        ),
         Index("ix_alerts_user_created", "user_id", "created_at"),  # the inbox, newest first
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id", ondelete="CASCADE"), index=True)
-    alert_type: Mapped[str] = mapped_column(String(20))  # new | deadline_reminder | updated
+    alert_type: Mapped[str] = mapped_column(String(20))  # new | deadline_reminder | deadline_extended | updated
+    deadline: Mapped[date | None] = mapped_column(Date)  # the last date a reminder / extension is about
     matched_vacancy_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
     matched_program_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
     status: Mapped[str] = mapped_column(String(10), default="pending", index=True)
@@ -369,3 +380,6 @@ class ListingEvent(Base):
     payload: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_error: Mapped[str | None] = mapped_column(Text)

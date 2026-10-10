@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from shared.models import Attachment, Listing, Organization, Program, Vacancy
+from shared.models import Attachment, DeadlineChange, Listing, ListingEvent, Organization, Program, Vacancy
 from shared.orgs import clean_org_name, normalize_alias, org_slug
 from shared.slugs import listing_slug
 from shared.taxonomy import education_levels, gender_eligibility
@@ -21,11 +21,16 @@ from shared.taxonomy import education_levels, gender_eligibility
 SIGNIFICANT_FIELDS = ("status", "last_date", "kind")
 
 
+# Fields that change on every scrape without the advert changing
+_VOLATILE_FIELDS = {"raw_html_path", "parsed_text_path", "scraped_at", "normalized_at"}
+
+
 @dataclass
 class UpsertResult:
     listing: Listing
     is_new: bool
     changed_fields: list[str]
+    events: list[str]  # listing_events written in this transaction
 
 
 def _date(value) -> date | None:
@@ -128,6 +133,8 @@ def upsert_listing(session: Session, record: dict) -> UpsertResult:
         "normalized_at": _dt(record.get("normalized_at")),
     }
     changed = [] if is_new else [f for f in SIGNIFICANT_FIELDS if getattr(listing, f) != new_values[f]]
+    old_status, old_last_date = (None, None) if is_new else (listing.status, listing.last_date)
+    old_content = None if is_new else _content_signature(listing)
     for key, value in new_values.items():
         setattr(listing, key, value)
 
@@ -155,7 +162,51 @@ def upsert_listing(session: Session, record: dict) -> UpsertResult:
 
     session.flush()
     enrich_listing(session, listing)
-    return UpsertResult(listing=listing, is_new=is_new, changed_fields=changed)
+    events = _record_changes(session, listing, is_new, old_status, old_last_date, old_content)
+    return UpsertResult(listing=listing, is_new=is_new, changed_fields=changed, events=events)
+
+
+def _content_signature(listing: Listing) -> tuple:
+    """What a reader of the listing page sees; a difference means the page must refresh."""
+    cols = tuple(
+        (c.key, repr(getattr(listing, c.key)))
+        for c in Listing.__table__.columns
+        if c.key not in _VOLATILE_FIELDS and c.key not in {"id", "created_at", "updated_at", "first_seen_at"}
+    )
+    children = (
+        tuple((v.post_name, tuple(v.bps or []), v.total_posts, v.age_min, v.age_max, v.qualification) for v in listing.vacancies),
+        tuple((p.name, p.level, p.duration) for p in listing.programs),
+        tuple(sorted(a.url for a in listing.attachments)),
+    )
+    return cols + children
+
+
+def _record_changes(session, listing, is_new, old_status, old_last_date, old_content) -> list[str]:
+    """Write the deadline history and the outbox events for this upsert, in the
+    caller's transaction: either the change and its events are stored, or neither."""
+    events: list[tuple[str, dict]] = []
+    if is_new:
+        events.append(("created", {}))
+    else:
+        if listing.last_date != old_last_date:
+            session.add(DeadlineChange(listing_id=listing.id, old_date=old_last_date, new_date=listing.last_date))
+            events.append(
+                (
+                    "deadline_changed",
+                    {
+                        "old": old_last_date.isoformat() if old_last_date else None,
+                        "new": listing.last_date.isoformat() if listing.last_date else None,
+                    },
+                )
+            )
+        if listing.status != old_status:
+            events.append(("reopened" if listing.status == "open" else "closed", {"old": old_status}))
+        if not events and _content_signature(listing) != old_content:
+            events.append(("updated", {}))
+    for event_type, payload in events:
+        session.add(ListingEvent(listing_id=listing.id, type=event_type, payload=payload))
+    session.flush()
+    return [t for t, _ in events]
 
 
 def resolve_organization(session: Session, raw: str | None, *, kind: str, source: str) -> Organization | None:
