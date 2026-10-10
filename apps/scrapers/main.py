@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 import config
+from shared.redact import install_redaction
 
 
 def _find_in_feeds(listing_id: str) -> dict | None:
@@ -298,6 +299,7 @@ def cmd_last_run(args) -> None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    install_redaction()
     p = argparse.ArgumentParser(description="LastBell NTS scraper")
     sub = p.add_subparsers(dest="cmd", required=True)
 
