@@ -13,6 +13,16 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_SECURITY = os.getenv("SMTP_SECURITY", "none").lower()  # none | starttls | ssl
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "20"))
+
+# Several (free) providers in a pool with daily/monthly caps and failover (mailpool.py):
+#   SMTP_PROVIDERS=brevo,mailjet   and per name SMTP_BREVO_HOST, _PORT, _USER, _PASSWORD,
+#   _SECURITY, _DAILY_LIMIT, _MONTHLY_LIMIT. Empty = the single SMTP_* relay above,
+#   capped by SMTP_DAILY_LIMIT / SMTP_MONTHLY_LIMIT if set.
+SMTP_PROVIDERS = [n.strip().lower() for n in os.getenv("SMTP_PROVIDERS", "").split(",") if n.strip()]
+SMTP_DAILY_LIMIT = int(os.getenv("SMTP_DAILY_LIMIT") or 0) or None
+SMTP_MONTHLY_LIMIT = int(os.getenv("SMTP_MONTHLY_LIMIT") or 0) or None
+# Warn (log + Sentry) once a day when today's sends pass this share of the pool's daily capacity
+MAIL_ALERT_PERCENT = int(os.getenv("MAIL_ALERT_PERCENT", "80"))
 EMAIL_FROM = os.getenv("EMAIL_FROM", "LastBell <no-reply@lastbell.local>")
 EMAIL_REPLY_TO = os.getenv("EMAIL_REPLY_TO", "")
 

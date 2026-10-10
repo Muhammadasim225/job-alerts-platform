@@ -57,21 +57,38 @@ def build_message(mail: Email) -> EmailMessage:
     return msg
 
 
+@dataclass(frozen=True)
+class SmtpSettings:
+    """One SMTP relay (Mailpit locally; Brevo, Mailjet, ... in production)."""
+
+    host: str
+    port: int
+    user: str = ""
+    password: str = field(default="", repr=False)
+    security: str = "none"  # none | starttls | ssl
+
+    @classmethod
+    def from_config(cls) -> "SmtpSettings":
+        return cls(config.SMTP_HOST, config.SMTP_PORT, config.SMTP_USER, config.SMTP_PASSWORD, config.SMTP_SECURITY)
+
+
 class SmtpMailer:
+    def __init__(self, settings: SmtpSettings | None = None):
+        self.settings = settings or SmtpSettings.from_config()
+
     def send(self, mail: Email) -> None:
         msg = build_message(mail)
+        s = self.settings
         try:
-            if config.SMTP_SECURITY == "ssl":
-                server = smtplib.SMTP_SSL(
-                    config.SMTP_HOST, config.SMTP_PORT, timeout=config.SMTP_TIMEOUT, context=ssl.create_default_context()
-                )
+            if s.security == "ssl":
+                server = smtplib.SMTP_SSL(s.host, s.port, timeout=config.SMTP_TIMEOUT, context=ssl.create_default_context())
             else:
-                server = smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT, timeout=config.SMTP_TIMEOUT)
+                server = smtplib.SMTP(s.host, s.port, timeout=config.SMTP_TIMEOUT)
             with server:
-                if config.SMTP_SECURITY == "starttls":
+                if s.security == "starttls":
                     server.starttls(context=ssl.create_default_context())
-                if config.SMTP_USER:
-                    server.login(config.SMTP_USER, config.SMTP_PASSWORD)
+                if s.user:
+                    server.login(s.user, s.password)
                 server.send_message(msg)
         except smtplib.SMTPRecipientsRefused as exc:
             raise PermanentError(f"recipient refused: {exc.recipients}") from exc

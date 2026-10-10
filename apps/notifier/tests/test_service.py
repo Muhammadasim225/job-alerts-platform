@@ -3,6 +3,7 @@
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
+from mailpool import PoolExhausted
 from sqlalchemy import select
 
 import service
@@ -99,6 +100,16 @@ def test_temporary_email_error_is_retried_permanent_is_not(db):
     assert service.dispatch_due() == [did]
     assert service.deliver(did, FakeMailer(PermanentError("550 no such user")), FakePusher).startswith("failed")
     assert _deliveries(db)["email"].status == "failed"
+
+
+def test_full_email_pool_defers_without_using_an_attempt(db):
+    _seed(db)
+    [did] = service.dispatch_due()
+    tomorrow = datetime.now(UTC) + timedelta(hours=6)
+    outcome = service.deliver(did, FakeMailer(PoolExhausted("no email provider can send", tomorrow)), FakePusher)
+    assert outcome.startswith("deferred")
+    d = _deliveries(db)["email"]
+    assert d.status == "pending" and d.attempts == 0 and d.next_attempt_at == tomorrow
 
 
 def test_push_goes_to_every_device_and_drops_dead_ones(db):

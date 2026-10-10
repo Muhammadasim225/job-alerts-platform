@@ -176,6 +176,16 @@ def mark_delivery_failed(
     return d
 
 
+def defer_delivery(session: Session, delivery_id: int, until: datetime, reason: str) -> Delivery:
+    """Nothing could even try to send it (e.g. every email provider is full for today):
+    retry at `until` without using up an attempt."""
+    d = _locked(session, delivery_id)
+    d.status, d.claimed_at, d.error, d.next_attempt_at = "pending", None, reason[:1000], until
+    d.attempts = max((d.attempts or 1) - 1, 0)
+    session.flush()
+    return d
+
+
 def skip_pending(session: Session, user_id: int, reason: str, channel: str | None = None) -> None:
     """The user switched alerts (or one channel) off: nothing queued goes out any more.
     With no channel, pending alerts are skipped too."""

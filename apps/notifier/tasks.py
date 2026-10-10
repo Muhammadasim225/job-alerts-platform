@@ -3,10 +3,12 @@
 import logging
 from functools import lru_cache
 
+from mailpool import PooledMailer, providers_from_env
+
 import config
 import service
 from celery_app import app
-from channels import PermanentError, SmtpMailer, WebPusher
+from channels import PermanentError, WebPusher
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +16,11 @@ log = logging.getLogger(__name__)
 @lru_cache(maxsize=1)
 def _pusher() -> WebPusher:
     return WebPusher()
+
+
+@lru_cache(maxsize=1)
+def _mailer() -> PooledMailer:
+    return PooledMailer(providers_from_env())
 
 
 @app.task(name="notify.dispatch")
@@ -27,7 +34,7 @@ def dispatch() -> int:
 
 @app.task(name="notify.deliver", rate_limit=config.DELIVER_RATE_LIMIT)
 def deliver(delivery_id: int) -> str:
-    outcome = service.deliver(delivery_id, mailer=SmtpMailer(), pusher_factory=_pusher)
+    outcome = service.deliver(delivery_id, mailer=_mailer(), pusher_factory=_pusher)
     log.info("Delivery %s: %s", delivery_id, outcome)
     return outcome
 
@@ -42,7 +49,7 @@ def deliver(delivery_id: int) -> str:
 )
 def send_login_code(email: str, code: str) -> None:
     """Sign-in code from the API. Retried quickly: the user is waiting for it."""
-    service.send_login_code(email, code, SmtpMailer())
+    service.send_login_code(email, code, _mailer())
 
 
 @app.task(name="notify.housekeeping")
