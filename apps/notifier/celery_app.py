@@ -14,9 +14,11 @@ import logging
 import os
 
 from celery import Celery
+from celery.signals import after_setup_logger, after_setup_task_logger
 from kombu import Exchange, Queue
 
 import config
+from shared.redact import install_redaction, sentry_before_send
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ def _scrub(event, hint):
     job = (event.get("extra") or {}).get("celery-job")
     if isinstance(job, dict):
         job["args"], job["kwargs"] = "[scrubbed]", "[scrubbed]"
-    return event
+    return sentry_before_send(event, hint)
 
 
 def init_sentry() -> None:
@@ -46,6 +48,13 @@ def init_sentry() -> None:
 
 
 init_sentry()
+
+
+@after_setup_logger.connect
+@after_setup_task_logger.connect
+def _mask_secrets_in_logs(logger, *args, **kwargs):
+    install_redaction(logger)
+
 
 app = Celery("notifier", broker=config.CELERY_BROKER_URL, include=["tasks"])
 app.conf.update(

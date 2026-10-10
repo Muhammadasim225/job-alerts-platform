@@ -1,0 +1,17 @@
+# Secret scanning (pre-commit hook + CI). Extends gitleaks' default rules.
+title = "LastBell gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and test fixtures, never real secrets"
+paths = [
+  '''\.env\.example$''',
+  '''(^|/)tests/''',
+  '''(^|/)docs/seo/''',
+]
+regexes = [
+  '''change-me''',
+  '''Nanonets_Ocr_S_F16''',  # deAPI model name, not a key
+]

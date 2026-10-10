@@ -25,6 +25,17 @@ jobs:
       - name: Ruff format
         run: uvx ruff@0.13 format --check .
 
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan the whole history, not only the last commit
+      - name: Gitleaks (fails on any secret, values redacted in the log)
+        run: >-
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.2
+          git /repo --config /repo/.gitleaks.toml --redact --no-banner --exit-code 1
+
   test:
     runs-on: ubuntu-latest
     services:

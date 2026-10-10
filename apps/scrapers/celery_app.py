@@ -17,12 +17,20 @@ import logging
 import os
 
 from celery import Celery
+from celery.signals import after_setup_logger, after_setup_task_logger
 from kombu import Exchange, Queue
 
 import config
 from beat_schedule import BEAT_SCHEDULE
+from shared.redact import install_redaction, sentry_before_send
 
 log = logging.getLogger(__name__)
+
+
+@after_setup_logger.connect
+@after_setup_task_logger.connect
+def _mask_secrets_in_logs(logger, *args, **kwargs):
+    install_redaction(logger)
 
 
 def init_sentry() -> None:
@@ -39,6 +47,7 @@ def init_sentry() -> None:
         integrations=[CeleryIntegration(monitor_beat_tasks=True)],
         traces_sample_rate=0.0,
         send_default_pii=False,
+        before_send=sentry_before_send,
     )
     log.info("Sentry enabled")
 

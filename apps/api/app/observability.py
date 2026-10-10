@@ -21,6 +21,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from shared.redact import install_redaction, sentry_before_send
+
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 log = logging.getLogger("api.access")
 
@@ -43,6 +45,7 @@ def setup_logging() -> None:
     )
     root = logging.getLogger()
     root.handlers[:] = [handler]
+    install_redaction(root)
     root.setLevel(level)
     # uvicorn's own access log would duplicate ours
     logging.getLogger("uvicorn.access").disabled = True
@@ -59,6 +62,7 @@ def init_sentry() -> bool:
         environment=os.getenv("SENTRY_ENVIRONMENT", "development"),
         traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
         send_default_pii=False,  # no IPs / headers / bodies of users in Sentry
+        before_send=sentry_before_send,
     )
     return True
 
