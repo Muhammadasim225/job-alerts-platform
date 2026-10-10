@@ -20,6 +20,11 @@ def test_migrations_create_all_tables(session):
         "auth_sessions",
         "push_subscriptions",
         "deliveries",
+        "organizations",
+        "hub_slugs",
+        "deadline_changes",
+        "saved_listings",
+        "listing_events",
     } <= tables
 
 
