@@ -1,6 +1,10 @@
 # Frontend plan: SarkariAlert website (apps/web)
 
-Status: plan, 2026-10-05. Based on:
+Status: plan, 2026-10-05. **Superseded in part by [frontend-blueprint.md](frontend-blueprint.md) (2026-10-10)**: the
+URL map, page priorities and build order there replace §2, §2a, §4 and §10 here. SEO rules (§3), the listing page
+(§5), onboarding (§6), the design tokens (§7) and the architecture (§8) still apply.
+
+Based on:
 
 - a teardown of 11 Pakistani sites (jobz.pk, pakistanjobsbank, ilmkidunya, rozee, mustakbil, NJP, Punjab Jobs, NTS, PPSC,
   FPSC, UrduPoint) and of freejobalert, sarkariresult, LinkedIn Jobs, Wellfound and eduvision;

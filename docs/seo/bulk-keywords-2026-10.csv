@@ -1,0 +1,51 @@
+keyword,intent,volume,cpc_pkr,paid_difficulty,seo_difficulty,status,cluster
+govt jobs for female in pakistan,,210,0,1,5,outdated,Female govt (Pakistan)
+govt jobs for female in punjab,,20,0,1,5,outdated,Female govt (Punjab)
+female jobs in lahore,I,5400,77.57,1,20,shown,Female Lahore (mixed)
+nadra jobs 2026,I,8100,196.69,1,19,shown,NADRA
+fia jobs 2026,I,6600,0,1,19,shown,FIA
+wapda jobs 2026,I,6600,221.63,1,13,shown,WAPDA
+pak army jobs 2026,,0,0,1,4,outdated,Pak Army
+pak navy jobs 2026,I,1300,0,1,14,shown,Pak Navy
+paf jobs 2026,I,2900,0,1,11,shown,PAF
+asf jobs 2026,I,4400,0,1,16,shown,ASF
+fbr jobs 2026,I,320,0,1,19,outdated,FBR
+ministry of defence jobs 2026,I+N,12100,0,1,13,shown,Ministry of Defence
+pakistan railway jobs 2026,I,1900,0,1,11,shown,Pakistan Railways
+pakistan post jobs 2026,,40,0,1,5,outdated,Pakistan Post
+ib jobs 2026,I,320,0,1,13,shown,IB
+sbp jobs 2026,,0,0,1,12,outdated,SBP
+sts jobs 2026,,0,0,1,12,outdated,Testing services (no demand)
+pts jobs 2026,,0,0,1,12,outdated,Testing services (no demand)
+ots jobs 2026,I,320,0,1,16,shown,OTS
+etea jobs 2026,I+C,390,0,1,16,shown,ETEA
+bts jobs 2026,,0,0,1,12,outdated,Testing services (no demand)
+ppsc result 2026,I,880,0,1,11,shown,PPSC result
+fpsc result 2026,,0,0,1,12,outdated,FPSC result
+ppsc roll number slip,N+I,880,0,1,16,shown,PPSC roll slip
+nts result check by cnic,I+N,1000,0,1,30,shown,NTS result
+nts roll number slip download,T+N+I,1300,0,1,20,shown,NTS roll slip
+health department jobs 2026,I,480,2113.78,1,26,shown,Health dept
+education department jobs 2026,,0,0,1,4,outdated,Education dept
+punjab police jobs 2026,I+C,9900,0,1,18,shown,Punjab Police
+sindh police jobs 2026,I,2900,0,1,10,shown,Sindh Police
+govt jobs in gujranwala,,390,0,1,5,outdated,City Gujranwala
+govt jobs in sialkot,,390,0,1,5,outdated,City Sialkot
+govt jobs in sargodha,C+I,320,0,1,16,outdated,City Sargodha
+govt jobs in bahawalpur,,320,0,1,5,outdated,City Bahawalpur
+govt jobs in sukkur,,70,0,1,5,outdated,City Sukkur
+govt jobs in abbottabad,,260,0,1,5,outdated,City Abbottabad
+govt jobs in mardan,,10,0,1,5,outdated,City Mardan
+govt jobs in ajk,I+N,390,0,1,16,shown,Region AJK
+govt jobs in gilgit baltistan,,170,0,1,5,outdated,Region Gilgit-Baltistan
+jang newspaper jobs,I,390,94.19,1,21,shown,Newspaper names
+express newspaper jobs today,I+N,320,0,1,34,shown,Newspaper names
+dawn jobs,,170,0,1,18,outdated,Newspaper names
+aiou admission 2026,I+T,12100,108.04,1,26,shown,AIOU admission
+aiou admission last date,I,1000,0,1,26,shown,AIOU last date
+sarkari naukri pakistan,,40,0,1,13,outdated,Alert / daily intent
+new jobs today in pakistan,,70,119.13,9,8,outdated,Alert daily jobs
+govt jobs whatsapp group,,70,0,1,5,outdated,Alert WhatsApp
+govt jobs for disabled persons,,70,0,1,6,outdated,FAQ disabled quota
+army jobs for matric pass,,10,0,1,5,outdated,Pak Army matric
+govt jobs age limit relaxation,,0,0,1,4,outdated,FAQ age relaxation
