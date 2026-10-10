@@ -151,7 +151,7 @@ def digest_push(items: list[Item]) -> dict:
         "title": digest_subject(items)[:80],
         "body": body[:PUSH_BODY_MAX],
         "url": url,
-        "tag": "sarkarialert-alerts",  # a newer digest replaces an unread older one
+        "tag": "lastbell-alerts",  # a newer digest replaces an unread older one
         "count": len(items),
     }
 
@@ -160,7 +160,7 @@ def login_email(email: str, code: str, ttl_minutes: int = 10) -> Email:
     ctx = {"code": code, "ttl_minutes": ttl_minutes, "web_url": config.WEB_BASE_URL}
     return Email(
         to=email,
-        subject=f"{code} is your SarkariAlert sign-in code",
+        subject=f"{code} is your LastBell sign-in code",
         text=_env.get_template("login_code.txt").render(ctx),
         html=_env.get_template("login_code.html").render(ctx),
     )

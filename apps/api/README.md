@@ -1,4 +1,4 @@
-# api — SarkariAlert backend API (FastAPI)
+# api — LastBell backend API (FastAPI)
 
 Interactive docs: **http://localhost:8000/docs** (OpenAPI at `/openapi.json`).
 

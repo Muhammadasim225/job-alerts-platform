@@ -1,4 +1,4 @@
-"""SarkariAlert API.
+"""LastBell API.
 
   /v1/...            public, read-only: listings, posts, stats (website, SEO pages, partners)
   /v1/auth/...       sign-in by emailed code -> session token
@@ -24,7 +24,7 @@ def create_app() -> FastAPI:
     setup_logging()
     init_sentry()
     app = FastAPI(
-        title="SarkariAlert API",
+        title="LastBell API",
         version="1.0.0",
         description="Pakistan government job and admission listings (NTS first), consolidated from official sources.",
     )

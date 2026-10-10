@@ -13,12 +13,12 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_SECURITY = os.getenv("SMTP_SECURITY", "none").lower()  # none | starttls | ssl
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "20"))
-EMAIL_FROM = os.getenv("EMAIL_FROM", "SarkariAlert <no-reply@sarkarialert.local>")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "LastBell <no-reply@lastbell.local>")
 EMAIL_REPLY_TO = os.getenv("EMAIL_REPLY_TO", "")
 
 # Web Push (VAPID). Generate a pair once with: python vapid.py
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
-VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:admin@sarkarialert.local")
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:admin@lastbell.local")
 PUSH_TTL_SECONDS = int(os.getenv("PUSH_TTL_SECONDS", str(24 * 3600)))  # undelivered pushes expire after a day
 PUSH_TIMEOUT = float(os.getenv("PUSH_TIMEOUT", "10"))
 

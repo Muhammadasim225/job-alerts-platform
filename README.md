@@ -1,4 +1,4 @@
-# SarkariAlert — job-alerts-platform
+# LastBell — job-alerts-platform
 
 Pakistan government job and admission alerts. Adverts are collected from official sources (NTS first), read into
 structured posts (BPS, seats, qualification, age, last date), and matched to each user's preferences. Users are alerted

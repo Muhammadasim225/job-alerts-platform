@@ -298,7 +298,7 @@ def cmd_last_run(args) -> None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-    p = argparse.ArgumentParser(description="SarkariAlert NTS scraper")
+    p = argparse.ArgumentParser(description="LastBell NTS scraper")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("scrape")

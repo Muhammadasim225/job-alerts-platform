@@ -1,4 +1,4 @@
-# Frontend plan: SarkariAlert website (apps/web)
+# Frontend plan: LastBell website (apps/web)
 
 Status: plan, 2026-10-05. **Superseded in part by [frontend-blueprint.md](frontend-blueprint.md) (2026-10-10)**: the
 URL map, page priorities and build order there replace §2, §2a, §4 and §10 here. SEO rules (§3), the listing page
@@ -65,7 +65,7 @@ value, which matters for later monetisation.
    ISR). Links are real `<a href>`. Google: "Google can only discover your links if they are `<a>` HTML elements with an
    `href` attribute." No hash routes, and no infinite scroll without paginated URLs.
 2. **Metadata per page**, using the Next 16 `generateMetadata` API:
-   - unique `title` (root template `%s | SarkariAlert`)
+   - unique `title` (root template `%s | LastBell`)
    - `description`, `alternates.canonical`, `openGraph`, `twitter`, `robots`
    - `metadataBase` set in the root layout. Without it, relative canonicals fail the build.
 3. **Title formulas.** The year always comes from the data, never typed:
@@ -305,7 +305,7 @@ apps/web/
 
 ## 11. Decisions for the owner
 
-- **Brand name and domain** (e.g. sarkarialert.pk). This is needed for `metadataBase`, emails and the OG image.
+- **Brand name and domain** (decided: lastbell.pk). This is needed for `metadataBase`, emails and the OG image.
 - **Brand color:** `#0F5C85` teal-blue (recommended) or another.
 - **Font:** the system stack (recommended for speed) or Inter (one self-hosted variable file, more brand feel).
 - **JobPosting / Google for Jobs:** start without it because of the fee rule, and test it later (recommended).

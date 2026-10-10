@@ -15,7 +15,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    image: sarkarialert-api:latest
+    image: lastbell-api:latest
     restart: unless-stopped
     logging: *logging
     ports:
@@ -46,7 +46,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     # Localhost only: reachable from this machine (tests, DB tools), not from the network
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -63,7 +63,7 @@ services:
     command: redis-server --appendonly yes
     # Localhost only: Redis has no password, it must never be reachable from the network
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:${REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -74,7 +74,7 @@ services:
 
   # One-off: bring the Postgres schema up to date (packages/shared migrations)
   migrate:
-    image: sarkarialert-scrapers:latest
+    image: lastbell-scrapers:latest
     command: python -m shared.migrate
     logging: *logging
     env_file:
@@ -88,7 +88,7 @@ services:
     build:
       context: .
       dockerfile: apps/scrapers/Dockerfile
-    image: sarkarialert-scrapers:latest
+    image: lastbell-scrapers:latest
     restart: unless-stopped
     logging: *logging
     # scrape (1 at a time via lock) + process (parallel OCR) + default (reminders, housekeeping).
@@ -117,7 +117,7 @@ services:
 
   scraper-beat:
     # Same image as scraper-worker (built once by that service)
-    image: sarkarialert-scrapers:latest
+    image: lastbell-scrapers:latest
     restart: unless-stopped
     logging: *logging
     command: celery -A celery_app beat --loglevel=INFO --schedule=/app/data/celerybeat-schedule
@@ -137,7 +137,7 @@ services:
     build:
       context: .
       dockerfile: apps/notifier/Dockerfile
-    image: sarkarialert-notifier:latest
+    image: lastbell-notifier:latest
     restart: unless-stopped
     logging: *logging
     env_file:

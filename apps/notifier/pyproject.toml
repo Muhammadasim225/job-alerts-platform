@@ -1,7 +1,7 @@
 [project]
 name = "notifier"
 version = "0.1.0"
-description = "SarkariAlert notifier: email digests and Web Push from the alert outbox (Celery)"
+description = "LastBell notifier: email digests and Web Push from the alert outbox (Celery)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

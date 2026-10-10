@@ -66,7 +66,7 @@ def test_push_payload_is_small_and_points_to_the_right_page():
 
 
 def test_message_headers(monkeypatch):
-    monkeypatch.setattr(channels.config, "EMAIL_FROM", "SarkariAlert <alerts@sarkarialert.pk>")
+    monkeypatch.setattr(channels.config, "EMAIL_FROM", "LastBell <alerts@lastbell.pk>")
     mail = content.digest_email(User(id=7, email="a@example.com"), [item()])
     raw = channels.build_message(mail).as_bytes().decode()
     # Long one-click unsubscribe URL stays a plain <url> on one line (no RFC 2047 encoding)
@@ -75,7 +75,7 @@ def test_message_headers(monkeypatch):
     assert "=?utf-8?" not in raw.split("\r\n\r\n")[0]  # headers
 
     msg = channels.build_message(Email("a@example.com", "Hi", "text", "<p>html</p>", {"X-Test": "1"}))
-    assert msg["Message-ID"].endswith("@sarkarialert.pk>") and msg["X-Test"] == "1"
+    assert msg["Message-ID"].endswith("@lastbell.pk>") and msg["X-Test"] == "1"
     assert [p.get_content_type() for p in msg.iter_parts()] == ["text/plain", "text/html"]
 
 

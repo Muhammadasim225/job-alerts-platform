@@ -1,7 +1,7 @@
 [project]
 name = "shared"
 version = "0.1.0"
-description = "SarkariAlert shared backend code: database models, persistence and matching"
+description = "LastBell shared backend code: database models, persistence and matching"
 readme = "README.md"
 authors = [
     { name = "Hi 👋, I'm Mohammad Asim", email = "muhammadasim4927@gmail.com" }

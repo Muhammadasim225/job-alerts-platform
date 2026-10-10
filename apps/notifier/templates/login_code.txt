@@ -1,4 +1,4 @@
-Your SarkariAlert sign-in code is: {{ code }}
+Your LastBell sign-in code is: {{ code }}
 
 It is valid for {{ ttl_minutes }} minutes and can be used once.
 
