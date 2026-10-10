@@ -1,7 +1,7 @@
 [project]
 name = "api"
 version = "0.1.0"
-description = "SarkariAlert backend API (FastAPI)"
+description = "LastBell backend API (FastAPI)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
