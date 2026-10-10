@@ -9,6 +9,7 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from mailpool import PoolExhausted
 from sqlalchemy import delete, update
 
 import config
@@ -114,6 +115,10 @@ def deliver(delivery_id: int, mailer, pusher_factory) -> str:
             delivered, gone = [], []
         else:
             delivered, gone = _send_push(job, pusher_factory())
+    except PoolExhausted as exc:
+        with _db() as s:
+            notifications.defer_delivery(s, job.delivery_id, exc.retry_at, str(exc))
+        return f"deferred: {exc}"
     except PermanentError as exc:
         with _db() as s:
             notifications.mark_delivery_failed(s, job.delivery_id, str(exc), permanent=True)
