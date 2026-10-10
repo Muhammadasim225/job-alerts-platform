@@ -12,11 +12,17 @@ Designed from the real normalized NTS records (apps/scrapers/data/normalized):
   preferences   what a user wants to be alerted about
   alerts        every match for a user (their in-app inbox), unique per (user, listing, type)
   deliveries    one notification (email digest / push) carrying a batch of alerts, with retries
+  organizations canonical employers / commissions / testing bodies (hubs /org/{slug})
+  hub_slugs     the city, province, region and field hubs of the website (/jobs/{slug})
+  deadline_changes  every change of a listing's last date ("deadline extended" banners)
+  saved_listings    listings a user saved for a last-date reminder
+  listing_events    transactional outbox of listing changes (page refresh, alerts, caches)
 """
 
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -52,11 +58,16 @@ class Listing(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(10), index=True)  # open | closed
     kind: Mapped[str] = mapped_column(String(12), index=True)  # job | admission | test | unknown
     title: Mapped[str] = mapped_column(Text)
-    organization: Mapped[str | None] = mapped_column(Text)
+    organization: Mapped[str | None] = mapped_column(Text)  # as the source wrote it
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="SET NULL"), index=True)
     department: Mapped[str | None] = mapped_column(Text)
     project_code: Mapped[str | None] = mapped_column(String(40))
+    # URL: /jobs/{slug}-{id}; rebuilt on every update, old slugs redirect by id
+    slug: Mapped[str | None] = mapped_column(String(100))
+    apply_url: Mapped[str | None] = mapped_column(Text)  # official online-apply page, when known
 
     last_date: Mapped[date | None] = mapped_column(Date, index=True)
+    last_date_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # with time (PKT), when known
     announce_date: Mapped[date | None] = mapped_column(Date)
     test_date: Mapped[date | None] = mapped_column(Date)  # tentative
 
@@ -84,6 +95,7 @@ class Listing(TimestampMixin, Base):
         back_populates="listing", cascade="all, delete-orphan", order_by="Program.position"
     )
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="listing", cascade="all, delete-orphan")
+    org: Mapped["Organization | None"] = relationship()
 
     @property
     def is_expired(self) -> bool:
@@ -109,6 +121,9 @@ class Vacancy(Base):
     age_min: Mapped[int | None] = mapped_column(Integer)
     age_max: Mapped[int | None] = mapped_column(Integer)
     qualification: Mapped[str | None] = mapped_column(Text)
+    # Levels named in the qualification (shared.taxonomy), lowest first; a filter hint only
+    education_levels: Mapped[list[str]] = mapped_column(ARRAY(String(20)), default=list, server_default="{}")
+    gender: Mapped[str | None] = mapped_column(String(10))  # any | male | female; None = not stated
     experience: Mapped[str | None] = mapped_column(Text)
     experience_years_min: Mapped[int | None] = mapped_column(Integer)
     mode: Mapped[str | None] = mapped_column(String(20))
@@ -281,3 +296,76 @@ class Delivery(Base):
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Organization(TimestampMixin, Base):
+    """A canonical employer, commission or testing body. Curated rows come from
+    shared.reference; the rest are created when a listing names a new employer."""
+
+    __tablename__ = "organizations"
+    __table_args__ = (Index("ix_organizations_aliases", "aliases", postgresql_using="gin"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(80), unique=True)
+    name: Mapped[str] = mapped_column(Text)
+    short_name: Mapped[str | None] = mapped_column(String(40))
+    kind: Mapped[str] = mapped_column(String(20), default="org")  # commission | testing | force | org | university
+    # Normalized spellings that resolve to this row (shared.orgs.normalize_alias)
+    aliases: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, server_default="{}")
+    official_url: Mapped[str | None] = mapped_column(Text)
+    curated: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
+class HubSlug(Base):
+    """A location or field hub page (/jobs/{slug}). `matches` are the raw values in
+    listings.provinces / listings.cities / vacancies.field that belong to it."""
+
+    __tablename__ = "hub_slugs"
+
+    slug: Mapped[str] = mapped_column(String(80), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))  # province | region | city | field
+    label: Mapped[str] = mapped_column(Text)
+    matches: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, server_default="{}")
+    province: Mapped[str | None] = mapped_column(Text)
+    nearby: Mapped[list[str]] = mapped_column(ARRAY(String(80)), default=list, server_default="{}")
+
+
+class DeadlineChange(Base):
+    """A listing's last date changed (usually an extension notice)."""
+
+    __tablename__ = "deadline_changes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id", ondelete="CASCADE"), index=True)
+    old_date: Mapped[date | None] = mapped_column(Date)
+    new_date: Mapped[date | None] = mapped_column(Date)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SavedListing(Base):
+    """A listing the user saved ("Reminder lagayein"); one row per user and listing."""
+
+    __tablename__ = "saved_listings"
+    __table_args__ = (UniqueConstraint("user_id", "listing_id", name="uq_saved_user_listing"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id", ondelete="CASCADE"), index=True)
+    remind: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ListingEvent(Base):
+    """Transactional outbox: written in the same transaction as the listing change,
+    consumed once (FOR UPDATE SKIP LOCKED) to refresh pages, queue alerts and drop
+    caches. type: created | deadline_changed | closed | reopened | updated."""
+
+    __tablename__ = "listing_events"
+    __table_args__ = (Index("ix_listing_events_unprocessed", "id", postgresql_where="processed_at IS NULL"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id", ondelete="CASCADE"), index=True)
+    type: Mapped[str] = mapped_column(String(20))
+    payload: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

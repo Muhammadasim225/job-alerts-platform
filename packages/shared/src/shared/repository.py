@@ -9,9 +9,13 @@ from dataclasses import dataclass
 from datetime import date, datetime
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from shared.models import Attachment, Listing, Program, Vacancy
+from shared.models import Attachment, Listing, Organization, Program, Vacancy
+from shared.orgs import clean_org_name, normalize_alias, org_slug
+from shared.slugs import listing_slug
+from shared.taxonomy import education_levels, gender_eligibility
 
 # Fields whose change makes an update worth telling users about
 SIGNIFICANT_FIELDS = ("status", "last_date", "kind")
@@ -144,6 +148,77 @@ def upsert_listing(session: Session, record: dict) -> UpsertResult:
             seen_urls.add(a["url"])
             attachments.append(_attachment(a))
     listing.attachments = attachments
+    if record.get("apply_url"):
+        listing.apply_url = record["apply_url"]
+    if record.get("last_date_at"):
+        listing.last_date_at = _dt(record["last_date_at"])
 
     session.flush()
+    enrich_listing(session, listing)
     return UpsertResult(listing=listing, is_new=is_new, changed_fields=changed)
+
+
+def resolve_organization(session: Session, raw: str | None, *, kind: str, source: str) -> Organization | None:
+    """The canonical organization for a source's organization text, created if new.
+
+    Safe under concurrent workers: a new row is inserted with ON CONFLICT DO NOTHING
+    and re-read, so two workers storing the same new employer end up on one row."""
+    if kind == "test" and source == "nts":  # GAT, NAT, ...: NTS runs the test itself
+        return session.scalar(select(Organization).where(Organization.slug == "nts"))
+    org = clean_org_name(raw)
+    if org is None:
+        return None
+    keys = sorted({normalize_alias(org.name), *([normalize_alias(org.short_name)] if org.short_name else [])})
+    found = session.scalar(
+        select(Organization)
+        .where(Organization.aliases.overlap(keys))
+        .order_by(Organization.curated.desc(), Organization.id)
+        .limit(1)
+    )
+    if found:
+        return found
+
+    base = org_slug(org) or "org"
+    for n in range(1, 20):
+        slug = base if n == 1 else f"{base}-{n}"
+        new_id = session.scalar(
+            insert(Organization)
+            .values(slug=slug, name=org.name, short_name=org.short_name, kind="org", aliases=keys)
+            .on_conflict_do_nothing(index_elements=["slug"])
+            .returning(Organization.id)
+        )
+        if new_id is not None:
+            return session.get(Organization, new_id)
+        taken = session.scalar(select(Organization).where(Organization.slug == slug))
+        if taken is not None and set(keys) & set(taken.aliases):  # same employer, stored meanwhile
+            return taken
+    return None
+
+
+def enrich_listing(session: Session, listing: Listing) -> None:
+    """Derive the website fields from the stored data: organization, slug, and each
+    post's education levels and gender. Idempotent; used on every upsert and to
+    backfill rows stored before these fields existed. Does not commit."""
+    org = resolve_organization(session, listing.organization, kind=listing.kind, source=listing.source)
+    listing.organization_id = org.id if org else None
+    when = listing.announce_date or listing.last_date or (listing.first_seen_at.date() if listing.first_seen_at else None)
+    listing.slug = listing_slug(
+        kind=listing.kind,
+        org=(org.short_name or org.name) if org else None,
+        city=listing.cities[0] if listing.cities else None,
+        when=when,
+        title=listing.title,
+    )
+    gender = gender_eligibility((listing.advert_facts or {}).get("gender"))
+    for v in listing.vacancies:
+        v.education_levels = education_levels(v.qualification)
+        v.gender = gender
+    session.flush()
+
+
+def backfill_listings(session: Session) -> int:
+    """Enrich every listing that has no slug yet (rows stored before data model v2)."""
+    listings = session.scalars(select(Listing).where(Listing.slug.is_(None))).all()
+    for listing in listings:
+        enrich_listing(session, listing)
+    return len(listings)

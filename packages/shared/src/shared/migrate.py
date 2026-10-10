@@ -22,7 +22,18 @@ def alembic_config(url: str | None = None) -> Config:
 
 
 def upgrade(url: str | None = None, revision: str = "head") -> None:
+    """Migrate the schema, then sync reference data and fill in derived listing fields
+    (both idempotent, so every deploy and test run can call this)."""
     command.upgrade(alembic_config(url), revision)
+    if revision == "head":
+        from shared.db import session_scope
+        from shared.reference import sync_reference_data
+        from shared.repository import backfill_listings
+
+        with session_scope(url) as session:
+            sync_reference_data(session)
+            session.flush()
+            backfill_listings(session)
 
 
 def main() -> None:
