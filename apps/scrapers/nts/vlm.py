@@ -11,7 +11,8 @@ HTML/Markdown that can be parsed structurally.
                                                   "result": "...", "result_url": "..."}}
 
 Cost control: results are cached by image hash (a file is never paid for twice),
-and a daily call budget (VLM_MAX_CALLS_PER_DAY) is enforced in Redis.
+a daily call budget (VLM_MAX_CALLS_PER_DAY) is enforced in Redis, and the requests
+are spread over a pool of keys with per-key daily caps and pacing (nts.deapi_keys).
 """
 
 import hashlib
@@ -23,6 +24,8 @@ from datetime import date
 import requests
 
 import config
+from nts import deapi_keys
+from nts.deapi_keys import Key, KeyExhausted
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +44,7 @@ class InputTooLarge(VlmError):
 
 
 def vlm_available() -> bool:
-    return bool(config.DEAPI_API_KEY)
+    return bool(config.DEAPI_API_KEYS)
 
 
 def _cache_path(digest: str):
@@ -89,50 +92,38 @@ def _take_budget() -> bool:
     return True
 
 
-def _headers() -> dict:
-    return {"Authorization": f"Bearer {config.DEAPI_API_KEY}", "Accept": "application/json"}
+def _headers(key: Key) -> dict:
+    return {"Authorization": f"Bearer {key.secret}", "Accept": "application/json"}
 
 
 RATE_LIMIT_RETRIES = 3
-PAUSE_KEY = "nts:vlm:paused_until"
+REFUSED = (401, 402, 403)  # bad / revoked key, no credit left
 
 
 class QuotaExhausted(VlmError):
-    """deAPI's daily request quota is used up; VLM is paused until it resets."""
+    """Every deAPI key is used up for today; VLM is off until one resets."""
 
 
 def paused_until() -> float | None:
-    """Epoch seconds until which deAPI is known to refuse us (daily quota), else None."""
-    from nts.dedup import get_redis
-
-    try:
-        value = get_redis().get(PAUSE_KEY)
-    except Exception:
-        return None
-    if value and float(value) > time.time():
-        return float(value)
-    return None
+    """Epoch seconds until which every deAPI key is spent, else None."""
+    return deapi_keys.paused_until()
 
 
-def _pause(until: float) -> None:
-    from nts.dedup import get_redis
+def _rate_limited(call, key: Key, *, new_job: bool = False):
+    """Run call(key), an HTTP request, counted against the key, and handle refusals:
 
-    try:
-        get_redis().set(PAUSE_KEY, str(until), ex=max(60, int(until - time.time())))
-    except Exception:
-        log.warning("Could not store the VLM pause in Redis", exc_info=True)
-
-
-def _rate_limited(call):
-    """Run an HTTP call and handle 429s by their kind (see X-RateLimit-* headers):
-
-    - daily quota spent (free tier: 50/day): pause VLM until the daily reset and fail
-      at once, so every remaining image goes straight to Tesseract instead of waiting
+    - key refused (401/402/403): bench the key for a day, KeyExhausted
+    - daily quota spent (429, free tier: 50/day): bench the key until the daily reset
+      and fail at once, so the next key (or Tesseract) takes over instead of waiting
       (that waiting once made a single listing take 20 minutes)
-    - per-minute limit (5/min): wait for the window to reset, a few times at most
+    - per-minute limit (429, 5/min): wait for the window to reset, a few times at most
     """
     for attempt in range(RATE_LIMIT_RETRIES):
-        resp = call()
+        deapi_keys.spend(key, new_job=new_job and attempt == 0)
+        resp = call(key)
+        if resp.status_code in REFUSED:
+            deapi_keys.bench(key, time.time() + deapi_keys.DAY_S, f"refused with HTTP {resp.status_code}")
+            raise KeyExhausted(f"deAPI key {key.id} refused (HTTP {resp.status_code})")
         if resp.status_code != 429:
             return resp
         headers = getattr(resp, "headers", {}) or {}
@@ -141,11 +132,8 @@ def _rate_limited(call):
                 reset = float(headers.get("X-RateLimit-Daily-Reset"))
             except (TypeError, ValueError):
                 reset = time.time() + 6 * 3600
-            _pause(reset)
-            raise QuotaExhausted(
-                f"deAPI daily quota used up (limit {headers.get('X-RateLimit-Daily-Limit')}); "
-                f"VLM paused until {time.strftime('%Y-%m-%d %H:%M', time.localtime(reset))}"
-            )
+            deapi_keys.bench(key, reset, f"deAPI daily quota used up (limit {headers.get('X-RateLimit-Daily-Limit')})")
+            raise KeyExhausted(f"deAPI key {key.id}: daily quota used up")
         wait = headers.get("Retry-After") or headers.get("X-RateLimit-Reset")
         try:
             wait = float(wait)
@@ -159,23 +147,35 @@ def _rate_limited(call):
     return resp
 
 
-def _submit(data: bytes, session) -> str:
-    resp = _rate_limited(
-        lambda: session.post(
-            f"{config.DEAPI_BASE_URL}/api/v2/images/ocr",
-            headers=_headers(),
-            files={"image": ("advert.jpg", data, "image/jpeg")},
-            data={"model": config.DEAPI_OCR_MODEL, "format": "text", "return_result_in_response": "true"},
-            timeout=(15, 60),
-        )
-    )
-    if resp.status_code >= 400:
-        raise VlmError(f"deAPI OCR submit failed: HTTP {resp.status_code} {resp.text[:300]}")
-    body = resp.json()
-    request_id = (body.get("data") or {}).get("request_id") or body.get("request_id")
-    if not request_id:
-        raise VlmError(f"deAPI OCR submit returned no request_id: {str(body)[:300]}")
-    return request_id
+def _submit(data: bytes, session) -> tuple[Key, str]:
+    """Start an OCR job on the first key with room; the next key when one is spent.
+    Returns the key (its status polls must use the same account) and the job id."""
+    tried: set[str] = set()
+    while key := deapi_keys.available(exclude=tried):
+        try:
+            resp = _rate_limited(
+                lambda k: session.post(
+                    f"{config.DEAPI_BASE_URL}/api/v2/images/ocr",
+                    headers=_headers(k),
+                    files={"image": ("advert.jpg", data, "image/jpeg")},
+                    data={"model": config.DEAPI_OCR_MODEL, "format": "text", "return_result_in_response": "true"},
+                    timeout=(15, 60),
+                ),
+                key,
+                new_job=True,
+            )
+        except KeyExhausted as exc:
+            log.info("%s; trying the next key", exc)
+            tried.add(key.id)
+            continue
+        if resp.status_code >= 400:
+            raise VlmError(f"deAPI OCR submit failed: HTTP {resp.status_code} {resp.text[:300]}")
+        body = resp.json()
+        request_id = (body.get("data") or {}).get("request_id") or body.get("request_id")
+        if not request_id:
+            raise VlmError(f"deAPI OCR submit returned no request_id: {str(body)[:300]}")
+        return key, request_id
+    raise QuotaExhausted("every deAPI key is used up for today")
 
 
 def _poll_delays():
@@ -189,14 +189,18 @@ def _poll_delays():
         delay = min(delay * 1.5, 30)
 
 
-def _wait(request_id: str, session) -> str:
+def _wait(key: Key, request_id: str, session) -> str:
     deadline = time.monotonic() + TIMEOUT_SECONDS
     delays = _poll_delays()
     time.sleep(next(delays) if POLL_SECONDS else 0)
     while time.monotonic() < deadline:
-        resp = _rate_limited(
-            lambda: session.get(f"{config.DEAPI_BASE_URL}/api/v2/jobs/{request_id}", headers=_headers(), timeout=(10, 30))
-        )
+        try:
+            resp = _rate_limited(
+                lambda k: session.get(f"{config.DEAPI_BASE_URL}/api/v2/jobs/{request_id}", headers=_headers(k), timeout=(10, 30)),
+                key,
+            )
+        except KeyExhausted as exc:  # the job belongs to this key's account: cannot follow it elsewhere
+            raise QuotaExhausted(str(exc)) from exc
         if resp.status_code >= 400:
             raise VlmError(f"deAPI job status failed: HTTP {resp.status_code} {resp.text[:300]}")
         data = resp.json().get("data") or {}
@@ -261,7 +265,7 @@ def ocr_image(image, session=None) -> str:
     """Text (Markdown, with tables as HTML/Markdown) of a PIL image via deAPI.
     Tall images are read strip by strip and the texts joined."""
     if not vlm_available():
-        raise VlmError("DEAPI_API_KEY is not set")
+        raise VlmError("DEAPI_API_KEYS is not set")
     strips = split_strips(image)
     session = session or requests.Session()
     return "\n".join(_ocr_adaptive(strip, session) for strip in strips)
@@ -307,12 +311,12 @@ def _ocr_one(image, session) -> str:
         return cached.read_text(encoding="utf8")
     until = paused_until()
     if until:
-        raise QuotaExhausted(f"deAPI paused until {time.strftime('%Y-%m-%d %H:%M', time.localtime(until))} (daily quota)")
+        raise QuotaExhausted(f"every deAPI key is used up until {time.strftime('%Y-%m-%d %H:%M', time.localtime(until))}")
     if not _take_budget():
         raise VlmError("daily VLM budget spent")
 
     session = session or requests.Session()
-    text = _wait(_submit(data, session), session)
+    text = _wait(*_submit(data, session), session)
     config.VLM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cached.write_text(text, encoding="utf8")
     log.info("VLM OCR: %d chars (cached as %s)", len(text), digest[:12])
