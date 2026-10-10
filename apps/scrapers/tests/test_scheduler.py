@@ -7,7 +7,8 @@ import config
 from beat_schedule import BEAT_SCHEDULE
 from celery_app import TASK_TIME_LIMIT, app
 
-DAILY = {name: e for name, e in BEAT_SCHEDULE.items() if name != "notify-dispatch"}
+FREQUENT = {"notify-dispatch", "listing-events"}
+DAILY = {name: e for name, e in BEAT_SCHEDULE.items() if name not in FREQUENT}
 
 
 def test_scrape_runs_once_a_day_at_six():
@@ -32,6 +33,13 @@ def test_notifier_dispatch_runs_often_and_never_piles_up():
     assert e["task"] == "notify.dispatch" and interval <= 300
     assert e["options"]["queue"] == "notify" and e["options"]["expires"] < interval
     assert BEAT_SCHEDULE["notify-housekeeping"]["options"]["queue"] == "notify"
+
+
+def test_outbox_runs_every_minute_and_never_piles_up():
+    e = BEAT_SCHEDULE["listing-events"]
+    interval = e["schedule"].total_seconds()
+    assert e["task"] == "tasks.process_listing_events" and interval == 60
+    assert e["options"]["expires"] < interval
 
 
 def test_heavy_and_light_work_use_separate_queues():

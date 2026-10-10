@@ -21,9 +21,10 @@ from nts.downloader import download_listing_attachments, listing_files_changed
 from nts.normalizer import normalize_listing, save_normalized
 from nts.parser import parse_file, save_parsed
 from nts.run_spider import crawl_nts
-from nts.store import queue_alerts, queue_reminders, store_record
+from nts.store import process_events, queue_reminders, store_record
 from nts.syllabus import extract_test_syllabus
 from nts.tables import extract_post_table, rows_from_tables
+from shared.heartbeat import ping
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +107,8 @@ def process_listing(listing: dict) -> dict:
     out = save_normalized(record)
     # Raises on a DB error: the listing then stays unmarked and is retried next run
     stored = store_record(record)
-    alerts_queued = queue_alerts(stored, record)
+    if stored and stored.get("events"):
+        _kick_outbox()  # alerts and page refresh now, not at the next minute tick
 
     if download_errors:
         # Leave it unmarked so the next run retries the missing file (a Word file
@@ -130,7 +132,7 @@ def process_listing(listing: dict) -> dict:
         "needs_review": record["needs_review"],
         "output": out,
         "db": stored,
-        "alerts_queued": alerts_queued,
+        "events": (stored or {}).get("events", []),
     }
 
 
@@ -247,7 +249,12 @@ def scrape_nts(self, force: bool = False) -> dict:
         log.info("Previous NTS scrape still running; skipping")
         return {"skipped": "locked"}
     try:
-        return run_nts_pipeline(dispatch=lambda listing: process_nts_listing.delay(listing), force=force)
+        summary = run_nts_pipeline(dispatch=lambda listing: process_nts_listing.delay(listing), force=force)
+        ping(config.HEALTHCHECK_URL_SCRAPE, message=json.dumps(summary, default=str)[:2000])
+        return summary
+    except Exception as exc:
+        ping(config.HEALTHCHECK_URL_SCRAPE, ok=False, message=f"{type(exc).__name__}: {exc}")
+        raise
     finally:
         try:
             lock.release()
@@ -275,10 +282,37 @@ def process_nts_listing(listing: dict) -> dict:
 
 @app.task(name="tasks.queue_deadline_reminders")
 def queue_deadline_reminders_task(days_before: int = 2) -> int:
-    """Daily: second alert N days before the last date (sent by the bot, Phase 5)."""
-    n = queue_reminders(days_before)
+    """Daily: reminders for listings closing within N days (PKT), for alerted and
+    saved listings; one per user, listing and last date."""
+    try:
+        n = queue_reminders(days_before)
+    except Exception as exc:
+        ping(config.HEALTHCHECK_URL_REMINDERS, ok=False, message=f"{type(exc).__name__}: {exc}")
+        raise
     log.info("Queued %d deadline reminder(s)", n)
+    ping(config.HEALTHCHECK_URL_REMINDERS, message=f"queued={n}")
     return n
+
+
+@app.task(name="tasks.process_listing_events", ignore_result=True)
+def process_listing_events() -> dict:
+    """Every minute (and right after a store): run the listing_events outbox."""
+    try:
+        result = process_events()
+    except Exception as exc:
+        ping(config.HEALTHCHECK_URL_OUTBOX, ok=False, message=f"{type(exc).__name__}: {exc}")
+        raise
+    if result["processed"] or result["failed"]:
+        log.info("Outbox: %(processed)d processed, %(failed)d failed", result)
+    ping(config.HEALTHCHECK_URL_OUTBOX, ok=not result["failed"], message=json.dumps(result))
+    return result
+
+
+def _kick_outbox() -> None:
+    try:
+        process_listing_events.delay()
+    except Exception:  # the minute tick picks the events up anyway
+        log.warning("Could not enqueue the outbox run; the scheduled run will process the events")
 
 
 def cleanup_old_runs(retention_days: int, keep_latest: int = 5) -> int:
